@@ -28,15 +28,22 @@ Run locally from a clean `main` checkout after `npm ci`:
 | Lint | Pass | ESLint across the repository |
 | Type checking | Pass | All four workspaces |
 | Production builds | Pass | Web, API, and venue |
-| Unit/integration tests | **142 passed** | 21 contracts, 96 API, 7 web, 18 venue |
+| Unit/integration tests | **146 passed** | 21 contracts, 96 API, 11 web, 18 venue |
 | Browser E2E/accessibility | **14 passed** | Mobile and desktop; registration, owner link, admin, exports, snapshots, keyboard path, responsive overflow, automated WCAG A/AA scans |
 | Production dependency audit | Pass | `npm audit --omit=dev`: 0 vulnerabilities |
 | Full dependency audit | Attention | 3 development-only findings: 1 moderate and 2 critical in Vitest 3 / transitive test-runner packages; remediation requires Vitest 4 |
 | GitHub Actions release gate | **Pass** | Run `38280845304` for commit `e184bd9`: lint, types, 142 tests, builds, 14 browser/accessibility tests and Docker image build |
 | Docker image build | **Pass in CI** | Root production image built successfully in GitHub Actions run `38280845304` |
+| Local development smoke test | **Pass** | API and Vite proxy health, seeded public event, admin login/dashboard and 14 browser scenarios verified on October 13 |
 | External services/hardware | Not verified | Requires owner access and the manual checklists |
 
 The E2E run used an isolated MongoDB replica set and a local production build. It did not validate Atlas, HelloDeploy, Cloudflare, Resend delivery, DNS/TLS, or real venue devices.
+
+### Local development recovery (October 13)
+
+The public-page error at `localhost:5173` was caused by two local conditions: the API had stopped because MongoDB was unavailable, and `.env` configured API port 3009 while Vite still proxied to port 3000. Vite now reads the root `.env` port automatically, with `API_PROXY_TARGET` retained as an explicit override. The local `.env` was returned to the standard port 3000, the event was reseeded, and public event loading plus admin login/dashboard were verified in a real browser. All 14 E2E/accessibility scenarios passed against the restored stack; registration was returned to `draft` afterward.
+
+The current Linux account is not yet a member of the `docker` group, so the verification used the repository's temporary MongoDB replica-set tooling. Persistent local development still requires the owner to add the account to that group (or otherwise grant Docker access), sign out and back in, and start `docker compose up -d`.
 
 ## What is in good shape
 

@@ -116,3 +116,5 @@ MONGODB_URI='…' SESSION_SECRET='…' npm run create-admin -- --email member@ex
 - [x] GitHub Actions run `38280845304` is green for release candidate `e184bd9`, including E2E/accessibility and the Docker image build.
 - [ ] Record the actual HelloDeploy commit/image for rollback after production is updated.
 - [x] Playwright E2E/accessibility is included in CI through the isolated `npm run test:e2e:self-contained` release gate (14 tests passed locally on Oct 13).
+- [x] Local frontend/API port mismatch fixed; public event, admin login/dashboard and all 14 browser scenarios passed against a temporary local replica set on Oct 13. Registration was returned to draft afterward.
+- [ ] On the development laptop, run `sudo usermod -aG docker "$USER"`, sign out and back in, then verify `docker compose up -d` so local MongoDB persists between sessions.

@@ -11,6 +11,8 @@
 
 E2E, simulation and load scripts run against a **local production build**. See README "End-to-end tests" for how to start it (port 3210, `TURNSTILE_DISABLED=true`).
 
+For interactive development, Vite reads the root `.env` and proxies `/api` to `http://localhost:$PORT`. `API_PROXY_TARGET` remains available as an explicit override. A running frontend alone is insufficient: MongoDB must be healthy and the API health endpoint must return `200` before public or admin screens can load data.
+
 For an isolated E2E run with no existing MongoDB or API process, use:
 
 ```bash

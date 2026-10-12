@@ -36,14 +36,24 @@ cp .env.example .env                 # dev defaults; never commit real secrets
 docker compose up -d                 # MongoDB single-node replica set on 127.0.0.1:27017
 npm run seed                         # organization, event (registration in "draft"), 9 editable family branches
 ADMIN_PASSWORD='choose-a-long-password' npm run create-admin -- --email you@example.com --name "Your Name" --role event_admin
-npm run dev                          # API on :3000, web on :5173 (proxying /api)
+npm run dev                          # API on $PORT, web on :5173 (proxying /api to the same port)
 ```
 
 Open http://localhost:5173, sign in at `/admin`, and in **Settings** set online registration to _Open_.
 
 In dev without `RESEND_API_KEY`, emails go to the console transport. Set `DEV_MAILBOX_DIR=/some/dir` (non-production only) to write them to files so you can follow manage links.
 
-If port 3000 is taken, run the API with `PORT=3210` and the web with `API_PROXY_TARGET=http://localhost:3210 npm run dev -w apps/web`.
+The web dev server reads `PORT` from the root `.env` and proxies `/api` to that API port automatically. To proxy to a different host or port, set `API_PROXY_TARGET` explicitly; it takes precedence over `PORT`.
+
+If the landing page says it cannot load the event, verify the complete local stack:
+
+```bash
+docker compose ps                  # MongoDB should be healthy
+curl http://localhost:${PORT:-3000}/api/v1/health
+npm run seed                       # safe to rerun; seed data is idempotent
+```
+
+If Docker reports permission denied on Linux, add your account to the `docker` group with `sudo usermod -aG docker "$USER"`, then sign out and back in before retrying. Membership in that group grants root-equivalent access to Docker, so only do this on a trusted development machine.
 
 ## Commands
 

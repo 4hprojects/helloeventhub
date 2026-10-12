@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
-import { Alert, Card, Spinner } from '../../components/ui';
+import { Alert, Button, Card, Spinner } from '../../components/ui';
 import { usePublicEvent } from '../../lib/publicData';
 import { EventFacts } from './EventDetails';
 
 export default function Landing() {
-  const { data: event, error, loading } = usePublicEvent(undefined);
+  const { data: event, error, loading, reload } = usePublicEvent(undefined);
   return (
     <div className="flex flex-col gap-6">
       <div className="text-center">
@@ -12,7 +12,14 @@ export default function Landing() {
         <p className="mt-2 font-display text-lg text-ink-muted">Plan. Register. Connect.</p>
       </div>
       {loading && <Spinner />}
-      {error && <Alert tone="error" title="We couldn't load the event">Please refresh the page or try again later.</Alert>}
+      {error && (
+        <Alert tone="error" title="We couldn't load the event">
+          <p>The event details are temporarily unavailable. Please try again.</p>
+          <Button className="mt-3" variant="secondary" size="sm" loading={loading} onClick={reload}>
+            Try again
+          </Button>
+        </Alert>
+      )}
       {event && (
         <Card>
           <h1 className="text-2xl font-bold">{event.title}</h1>
