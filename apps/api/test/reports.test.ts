@@ -119,8 +119,13 @@ describe('exports', () => {
 });
 
 describe('headcount snapshots', () => {
+  // Registrations get real createdAt timestamps, so snapshot times must be relative to the real clock
+  // (a hard-coded cutoff silently turns into "the past" and breaks the test on a later day).
+  beforeAll(() => ctx.setNow(new Date(Date.now() + 60 * 60 * 1000)));
+  afterAll(() => ctx.setNow(new Date('2026-10-12T10:00:00+08:00')));
+
   it('captures point-in-time totals that later changes do not alter', async () => {
-    const cutoffAt = new Date('2026-10-12T09:00:00+08:00').toISOString();
+    const cutoffAt = new Date().toISOString(); // after the two registrations created in beforeAll
     const body = { cutoffAt, idempotencyKey: 'oct20-planning-1', label: 'Oct 20 planning' };
     const first = await admin.a.post(`/api/v1/admin/events/${ctx.eventId}/snapshots`).set('X-CSRF-Token', admin.csrf).send(body).expect(201);
     const before = first.body.totals;
@@ -142,8 +147,7 @@ describe('headcount snapshots', () => {
   });
 
   it('refuses future cutoffs and amendments without reason; amendments append', async () => {
-    // Test clock is fixed at 2026-10-12T10:00+08:00.
-    const future = new Date('2026-10-13T10:00:00+08:00').toISOString();
+    const future = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(); // beyond the test clock
     const fut = await admin.a.post(`/api/v1/admin/events/${ctx.eventId}/snapshots`).set('X-CSRF-Token', admin.csrf).send({ cutoffAt: future, idempotencyKey: 'future-key-1' }).expect(422);
     expect(fut.body.error.fieldErrors.cutoffAt).toBeDefined();
     const list = (await admin.a.get(`/api/v1/admin/events/${ctx.eventId}/snapshots`).expect(200)).body.items;
