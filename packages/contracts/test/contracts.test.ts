@@ -69,7 +69,7 @@ const base = {
   representative: { name: 'Example Rep', contacts: { email: 'rep@example.com', preferred: 'email' } },
   attendees: [{ fullName: 'Example One', ageCategory: 'adult', rsvp: 'confirmed' }],
   acceptedPrivacy: true,
-  consentVersion: '2026-10-v1',
+  consentVersion: '2026-10-v2',
 };
 
 describe('registrationCreateSchema', () => {

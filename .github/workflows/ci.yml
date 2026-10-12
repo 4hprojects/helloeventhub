@@ -18,5 +18,9 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: Install browser for end-to-end tests
+        run: npx playwright install --with-deps chromium
+      - name: End-to-end and accessibility tests
+        run: npm run test:e2e:self-contained
       - name: Docker image builds
         run: docker build -t helloeventhub:ci .

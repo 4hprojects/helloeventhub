@@ -4,7 +4,7 @@ import { usePublicEvent } from '../../lib/publicData';
 
 export function ContactInfo({ event }: { event: PublicEvent }) {
   const c = event.contactInfo;
-  if (!c.email && !c.phone && !c.messenger) {
+  if (!c.email && !c.phone && !c.messenger && !c.note) {
     return <p className="text-ink-muted">Organizer contact details will be posted here soon.</p>;
   }
   return (
@@ -48,7 +48,8 @@ export default function ContactPage() {
           <h2 className="mb-2 text-lg font-semibold">{event.title}</h2>
           <ContactInfo event={event} />
           <p className="mt-4 text-sm text-ink-muted">
-            Registered with a mobile number or Messenger only? Contact the organizers to change your registration — they will verify it's you first.
+            Registered with a mobile number or Messenger only? Contact the organizers to change your
+            registration — they will verify it's you first.
           </p>
         </Card>
       )}

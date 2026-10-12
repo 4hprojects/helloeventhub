@@ -107,7 +107,7 @@ export function registrationPayload(overrides: Record<string, unknown> = {}) {
       { fullName: 'Example Child Two', ageCategory: 'child', rsvp: 'tentative' },
     ],
     acceptedPrivacy: true,
-    consentVersion: '2026-10-v1',
+    consentVersion: '2026-10-v2',
     turnstileToken: 'tok',
     ...overrides,
   };

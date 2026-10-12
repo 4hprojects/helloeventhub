@@ -63,7 +63,7 @@ const eventSchema = new Schema(
     ageCategoryNote: { type: String, default: '' },
     privacyNotice: { type: String, default: '' },
     privacyNoticeApproved: { type: Boolean, default: false },
-    consentVersion: { type: String, required: true, default: '2026-10-v1' },
+    consentVersion: { type: String, required: true, default: '2026-10-v2' },
     revision,
   },
   opts,

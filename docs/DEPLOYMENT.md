@@ -1,6 +1,8 @@
 # Deployment guide (HelloDeploy → helloeventhub.online)
 
-The cloud app is **one Docker image** (root `Dockerfile`) that listens on `PORT` (default 3000) and serves both the API and the web app. HelloDeploy builds Docker images with buildx and puts its reverse proxy in front of the container, so set `TRUST_PROXY=1`. The domain is proxied by Cloudflare, so also set `CLOUDFLARE=true` and use the same Cloudflare SSL/TLS mode as the other HelloDeploy apps (their origins serve HTTP on port 80; "Full"/"Full (strict)" without an origin certificate causes error 525).
+The cloud app is **one Docker image** (root `Dockerfile`) that listens on `PORT` (default 3000) and serves both the API and the web app. HelloDeploy builds Docker images with buildx and puts its reverse proxy in front of the container, so set `TRUST_PROXY=1`. The domain is proxied by Cloudflare, so also set `CLOUDFLARE=true`.
+
+For production traffic containing registrations and staff sessions, prefer end-to-end TLS: configure a valid certificate at the HelloDeploy origin and use Cloudflare **Full (strict)**. Full mode against an origin that does not accept HTTPS produces error 525. Cloudflare Flexible can reach an HTTP-only origin, but the Cloudflare-to-origin hop is unencrypted; use it only as a temporary, explicitly accepted fallback while origin TLS is being enabled—not as an unnoticed production default.
 
 > The hosting platform is not assumed to work until the smoke test in `MANUAL_CHECKLIST.md` §2 passes (doc 10).
 
@@ -10,6 +12,7 @@ The cloud app is **one Docker image** (root `Dockerfile`) that listens on `PORT`
 - Resend account with the sending domain verified (SPF/DKIM per Resend's DNS instructions, plus DMARC).
 - Cloudflare Turnstile widget for `helloeventhub.online` (site key + secret key).
 - DNS for `helloeventhub.online` pointing at HelloDeploy as its docs instruct.
+- Origin HTTPS/certificate support confirmed with HelloDeploy, so Cloudflare can use Full (strict). If unavailable, document who accepted the temporary Flexible-mode risk and the date it will be removed.
 
 ## 2. Environment variables (production)
 
@@ -50,6 +53,16 @@ The process refuses to start in production with missing/unsafe values (test Turn
    (Or run `node apps/api/dist/scripts/seed.js` / `create-admin.js` inside the container if HelloDeploy supports one-off commands.)
 4. Sign in at `/admin` → **Settings**: official title, venue, contacts, age definition, privacy notice (mark approved only after organizer sign-off), cutoff time. Then set **Online registration → Open**.
 5. Smoke test with obviously fake identities, then cancel those registrations.
+
+Run the automated public preflight after every TLS or deployment change:
+
+```bash
+npm run preflight
+# For another environment:
+BASE_URL=https://staging.example.com npm run preflight
+```
+
+It verifies TLS lifetime, HTTP-to-HTTPS redirect, application/database health, public configuration, Turnstile, event/privacy/contact readiness, deep links and essential security headers. It does not replace the real email, backup-restore or signed-in admin smoke tests.
 
 ## 4. Each release
 

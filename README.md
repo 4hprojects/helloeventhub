@@ -4,13 +4,15 @@ Event registration and management. **Plan. Register. Connect.**
 
 The first event is the Menay Bugtong–Wakat Alsem Clan Reunion on **Saturday, Oct 24, 2026** (Asia/Manila). The specification lives in [docs/HelloEventHub_Full_Project_MD_Package](docs/HelloEventHub_Full_Project_MD_Package/HelloEventHub_Project_Plan/00_README_START_HERE.md).
 
-| Release | Scope | Status |
-|---|---|---|
-| **P0** | Public household registration, per-attendee RSVP, safe reference, email confirmation (Resend outbox), verified owner self-service, committee/admin login, event-scoped RBAC, search/edit/cancel with audit, live headcount dashboard | Implemented and tested |
-| **P0.5** | XLSX five-sheet report + CSV views (formula-safe), duplicate review queue, email failure view/resend/retry, append-only headcount snapshots (manual and automatic at cutoff) | Implemented and tested |
-| **P1** | Venue server (Node + SQLite) for check-in without internet: multi-station, walk-ins, durable local log, backups, cloud sync with checksum and conflict review, printable roster | Implemented and tested (QR scanning **not** shipped — manual lookup is primary) |
+| Release  | Scope                                                                                                                                                                                                                                | Status                                                                          |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| **P0**   | Public household registration, per-attendee RSVP, safe reference, email confirmation (Resend outbox), verified owner self-service, committee/admin login, event-scoped RBAC, search/edit/cancel with audit, live headcount dashboard | Implemented and tested                                                          |
+| **P0.5** | XLSX five-sheet report + CSV views (formula-safe), duplicate review queue, email failure view/resend/retry, append-only headcount snapshots (manual and automatic at cutoff)                                                         | Implemented and tested                                                          |
+| **P1**   | Venue server (Node + SQLite) for check-in without internet: multi-station, walk-ins, durable local log, backups, cloud sync with checksum and conflict review, printable roster                                                      | Implemented and tested (QR scanning **not** shipped — manual lookup is primary) |
 
 Owner tasks that cannot be automated (organizer sign-offs, hosting, DNS, Resend, Turnstile, Atlas, venue hardware) are in **[MANUAL_CHECKLIST.md](MANUAL_CHECKLIST.md)**.
+
+The current technical assessment, verified checks, risks, and ordered next work are in **[docs/PROJECT_ANALYSIS.md](docs/PROJECT_ANALYSIS.md)**.
 
 ## Repository layout
 
@@ -32,12 +34,12 @@ Requirements: Node 22+, Docker.
 npm install
 cp .env.example .env                 # dev defaults; never commit real secrets
 docker compose up -d                 # MongoDB single-node replica set on 127.0.0.1:27017
-npm run seed                         # organization, event (registration in "draft"), 9 provisional branches
+npm run seed                         # organization, event (registration in "draft"), 9 editable family branches
 ADMIN_PASSWORD='choose-a-long-password' npm run create-admin -- --email you@example.com --name "Your Name" --role event_admin
 npm run dev                          # API on :3000, web on :5173 (proxying /api)
 ```
 
-Open http://localhost:5173, sign in at `/admin`, and in **Settings** set online registration to *Open*.
+Open http://localhost:5173, sign in at `/admin`, and in **Settings** set online registration to _Open_.
 
 In dev without `RESEND_API_KEY`, emails go to the console transport. Set `DEV_MAILBOX_DIR=/some/dir` (non-production only) to write them to files so you can follow manage links.
 
@@ -45,17 +47,19 @@ If port 3000 is taken, run the API with `PORT=3210` and the web with `API_PROXY_
 
 ## Commands
 
-| Command | What it does |
-|---|---|
-| `npm run lint` / `npm run typecheck` | ESLint / TypeScript across all workspaces |
-| `npm test` | Unit + integration tests (API uses an in-memory MongoDB replica set; venue uses temp SQLite) |
-| `npm run build` | Build web, API bundle and venue server |
-| `npm start` | Run the built single-process server (`apps/api/dist/server.js`) |
-| `npm run test:e2e` | Playwright against a running server (see below) |
-| `npm run seed` / `npm run create-admin -- …` / `npm run ensure-indexes` | Operational scripts (use `MONGODB_URI` to target Atlas) |
-| `node scripts/venue-simulation.mjs` | Automated venue rehearsal against a running cloud server |
-| `node scripts/load-check.mjs` | Load and duplicate-safety check against a local build (see docs/TESTING.md) |
-| `npm run retention -- --event <slug> --mode anonymize` | Post-event data minimization (dry run unless `--apply --confirm <slug>`) |
+| Command                                                                 | What it does                                                                                 |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `npm run lint` / `npm run typecheck`                                    | ESLint / TypeScript across all workspaces                                                    |
+| `npm test`                                                              | Unit + integration tests (API uses an in-memory MongoDB replica set; venue uses temp SQLite) |
+| `npm run build`                                                         | Build web, API bundle and venue server                                                       |
+| `npm start`                                                             | Run the built single-process server (`apps/api/dist/server.js`)                              |
+| `npm run test:e2e`                                                      | Playwright against a running server (see below)                                              |
+| `npm run test:e2e:self-contained`                                       | Playwright with an isolated temporary MongoDB replica set (run `npm run build` first)        |
+| `npm run preflight`                                                     | Verify the live site's TLS, health, public launch settings, deep links and security headers  |
+| `npm run seed` / `npm run create-admin -- …` / `npm run ensure-indexes` | Operational scripts (use `MONGODB_URI` to target Atlas)                                      |
+| `node scripts/venue-simulation.mjs`                                     | Automated venue rehearsal against a running cloud server                                     |
+| `node scripts/load-check.mjs`                                           | Load and duplicate-safety check against a local build (see docs/TESTING.md)                  |
+| `npm run retention -- --event <slug> --mode anonymize`                  | Post-event data minimization (dry run unless `--apply --confirm <slug>`)                     |
 
 ### End-to-end tests
 

@@ -10,22 +10,25 @@ Legend: 🔴 blocks the public launch (target **Oct 15**) · 🟠 needed by **Oc
 
 | Decision | Current default in the app | Where to set it |
 |---|---|---|
-| [ ] Official event title | "Menay Bugtong–Wakat Alsem Clan Reunion 2026" (working title) | Settings → Official title |
-| [ ] Venue name, address, map link | Hidden ("Venue to be announced") | Settings → Venue |
-| [ ] Organizer contact (email / phone / Messenger) | None shown | Settings → Organizer contact |
-| [ ] Event description | Empty | Settings → Description |
-| [ ] Adult/child age definition | "Organizers will confirm the age that counts as a child." | Settings → Adult / child definition |
-| [ ] Oct 20 headcount cutoff time | **Oct 20, 23:59 Asia/Manila** (automatic snapshot) | Settings → Planning headcount cutoff |
-| [ ] Late registration after the cutoff | Allowed, marked "late" | Settings → Accept late registrations |
-| [ ] Capacity | No limit | Settings → Capacity |
-| [ ] Online changes deadline | Until event start | Settings → Online changes allowed until |
-| [ ] Family branch labels (8 + Other/Unsure, all provisional) | Albina, Magdalena, Mary, Toribio, Ganzon, Onofre, Mistihil, Denio, Other/Unsure | Settings → Family branches (rename or hide) |
-| [ ] **Privacy notice** text, retention period, and who the "controller" is (Data Privacy Act) | DRAFT template with `[ORGANIZERS TO CONFIRM]` placeholders | Settings → Privacy notice → edit, bump the version, tick "approved" |
+| [x] Official event title | "Menay Bugtong–Wakat Alsem Clan Reunion 2026" | Settings → Official title |
+| [x] Venue name, address, map link | Keep hidden; public wording is "Venue to be announced" | Settings → Venue (leave all three fields empty) |
+| [x] Organizer name | Ruby Sagorsor | Settings → Organizer contact → Note: `Organizer: Ruby Sagorsor. Contact details will be added soon.` |
+| [ ] Organizer contact (email / phone / Messenger) | To be added | Settings → Organizer contact |
+| [x] Event description | Short family-reunion invitation and planning purpose | Settings → Description |
+| [x] Adult/child age definition | Child: 12 or younger on Oct 24; adult: 13 or older | Settings → Adult / child definition |
+| [x] Oct 20 headcount cutoff time | **Oct 20, 23:59 Asia/Manila** (automatic snapshot) | Settings → Planning headcount cutoff |
+| [x] Late registration after the cutoff | Allowed, marked "late" | Settings → Accept late registrations |
+| [x] Capacity | No limit | Settings → Capacity (leave empty) |
+| [x] Online changes deadline | Until program start, Oct 24 at 09:00 | Settings → Online changes allowed until |
+| [x] Family branch labels | Albina, Magdalena, Mary, Toribio, Ganzon, Onofre, Mistihil, Denio, Other/Unsure | Settings → Family branches |
+| [ ] **Privacy notice approval and contact channel** | Controller: Ruby Sagorsor; delete/anonymize by Jan 22, 2027; notice v2 drafted | Add Ruby's public contact, review the notice, then tick "approved" |
 | [ ] Who is event admin vs committee | — | See §5 |
 
 ## 2. Hosting: HelloDeploy smoke test 🔴 (doc 10)
 
 Deploy the repo with its `Dockerfile` and record pass/fail for each step:
+
+> **Observed Oct 13:** Cloudflare DNS resolves, but both the site and health endpoint return HTTP 525. Preferred fix: configure a valid certificate/HTTPS at the HelloDeploy origin and use Cloudflare Full (strict). Flexible will reach an HTTP-only origin but leaves that hop unencrypted; use it only as a temporary, explicitly accepted fallback.
 
 - [ ] Control of `helloeventhub.online` and DNS edit access confirmed.
 - [ ] DNS A/CNAME set as HelloDeploy instructs; a trusted HTTPS certificate is issued and http redirects to https.
@@ -44,7 +47,7 @@ Deploy the repo with its `Dockerfile` and record pass/fail for each step:
 - [ ] **Cloudflare Turnstile:** create a widget for `helloeventhub.online` and set `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`.
 - [ ] **Session secret:** generate one with `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` and set it as `SESSION_SECRET`.
 - [ ] Set the other production variables listed in `docs/DEPLOYMENT.md` §2 (`NODE_ENV=production`, `APP_BASE_URL=https://helloeventhub.online`, `TRUST_PROXY=1`, `CLOUDFLARE=true`, …).
-- [ ] Cloudflare → SSL/TLS: same mode as the other HelloDeploy apps (origin is HTTP on port 80). "Full" without an origin certificate gives **error 525**.
+- [ ] Cloudflare → SSL/TLS: use Full (strict) with a valid origin certificate. Full against an HTTP-only origin gives **error 525**. If Flexible is temporarily required, record the risk owner and remediation date.
 
 ## 4. Seed production data 🔴
 
@@ -109,5 +112,6 @@ MONGODB_URI='…' SESSION_SECRET='…' npm run create-admin -- --email member@ex
 
 ## 10. Code hand-off decisions
 
-- [ ] Review the changes, then decide when to commit and push. The repo is `git init`-ed locally with **no commits**.
-- [ ] Optional: connect the GitHub repo so `.github/workflows/ci.yml` runs on every push.
+- [x] Repository is committed on `main`, connected to `origin`, and includes `.github/workflows/ci.yml`.
+- [ ] Confirm the latest GitHub Actions run is green, including the Docker image build, and record the deployed commit/image for rollback.
+- [x] Playwright E2E/accessibility is included in CI through the isolated `npm run test:e2e:self-contained` release gate (14 tests passed locally on Oct 13).

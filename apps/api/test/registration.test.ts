@@ -37,7 +37,7 @@ describe('POST /events/:id/registrations', () => {
     expect(res.body).not.toHaveProperty('manageToken');
     const reg = await Registration.findOne({ reference: res.body.reference }).lean();
     expect(reg?.contacts?.emailNormalized).toBe('rep@example.test');
-    expect(reg?.consent?.version).toBe('2026-10-v1');
+    expect(reg?.consent?.version).toBe('2026-10-v2');
     expect(await Attendee.countDocuments({ registrationId: reg!._id })).toBe(2);
     expect(await EmailJob.countDocuments({ registrationId: reg!._id, type: 'registration_confirmation' })).toBe(1);
   });

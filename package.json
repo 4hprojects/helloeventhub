@@ -21,6 +21,8 @@
     "format": "prettier --write .",
     "test": "npm run test --workspaces --if-present",
     "test:e2e": "playwright test",
+    "test:e2e:self-contained": "node apps/api/scripts/run-e2e.mjs",
+    "preflight": "node scripts/release-preflight.mjs",
     "seed": "npm run seed -w apps/api",
     "create-admin": "npm run create-admin -w apps/api --",
     "ensure-indexes": "npm run ensure-indexes -w apps/api",

@@ -37,7 +37,7 @@ JSON over HTTPS. Zod validation, consistent error payload `{error:{code,message,
   "eventCategoryId":"category-id",
   "attendees":[{"fullName":"Example Attendee One","ageCategory":"adult","rsvp":"confirmed"},{"fullName":"Example Attendee Two","ageCategory":"child","rsvp":"tentative"}],
   "acceptedPrivacy":true,
-  "consentVersion":"2026-10-v1"
+  "consentVersion":"2026-10-v2"
 }
 ```
 Reference labels/example values above are illustrative, not real participants. Implement exact serialization from shared contracts and add API integration tests.

@@ -11,6 +11,18 @@
 
 E2E, simulation and load scripts run against a **local production build**. See README "End-to-end tests" for how to start it (port 3210, `TURNSTILE_DISABLED=true`).
 
+For an isolated E2E run with no existing MongoDB or API process, use:
+
+```bash
+npm run build
+npx playwright install chromium # once per machine
+npm run test:e2e:self-contained
+```
+
+If Playwright does not provide a browser build for the host OS but Chromium is already installed, set its path, for example `PW_CHROMIUM_PATH=/snap/bin/chromium npm run test:e2e:self-contained`.
+
+The self-contained runner creates a temporary MongoDB replica set and mailbox, seeds an event and admin, starts the production API/web build, runs Playwright, and removes the temporary resources. Set `E2E_PORT` if port 3210 is unavailable. CI runs this path after the unit/integration tests and production build.
+
 ## Load check (Oct 11, 2026)
 
 **Setup.** Local production build on the development laptop, with MongoDB 7 in Docker (single-node replica set, journaled writes). 20 concurrent connections for 15 s per scenario; the dashboard used 5. The server ran with `CLOUDFLARE=true`, and every simulated visitor had its own `CF-Connecting-IP`, so the real per-visitor rate limiter applied. No bypass exists in the code. The database held ~1,250 registrations and ~2,700 attendees, several times the real event.

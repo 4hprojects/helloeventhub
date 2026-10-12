@@ -2,7 +2,10 @@ import { formatDateInZone, formatTimeInZone, type EmailJobType } from '@heh/cont
 import type { AttendeeDoc, EventDoc, RegistrationDoc } from '../db/models.js';
 
 export function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+  return s.replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+  );
 }
 
 export interface TemplateInput {
@@ -56,14 +59,20 @@ export function renderEmail(input: TemplateInput): { subject: string; html: stri
       subject = `Your link to manage your registration – ${event.title}`;
       intro = `Use the button below to view or change your registration. The link works once and expires in 30 minutes. If you did not request it, you can ignore this email.`;
       showSummary = false;
-      cta = { href: `${appBaseUrl}/registration/manage#t=${input.manageToken ?? ''}`, label: 'Manage my registration' };
+      cta = {
+        href: `${appBaseUrl}/registration/manage#t=${input.manageToken ?? ''}`,
+        label: 'Manage my registration',
+      };
       break;
   }
 
   const contact = event.contactInfo ?? {};
-  const contactLines = [contact.email && `Email: ${contact.email}`, contact.phone && `Phone: ${contact.phone}`, contact.messenger && `Messenger: ${contact.messenger}`].filter(
-    Boolean,
-  ) as string[];
+  const contactLines = [
+    contact.email && `Email: ${contact.email}`,
+    contact.phone && `Phone: ${contact.phone}`,
+    contact.messenger && `Messenger: ${contact.messenger}`,
+    contact.note,
+  ].filter(Boolean) as string[];
 
   const text = [
     event.title,
