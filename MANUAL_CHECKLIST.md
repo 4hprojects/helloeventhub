@@ -113,5 +113,6 @@ MONGODB_URI='…' SESSION_SECRET='…' npm run create-admin -- --email member@ex
 ## 10. Code hand-off decisions
 
 - [x] Repository is committed on `main`, connected to `origin`, and includes `.github/workflows/ci.yml`.
-- [ ] Confirm the latest GitHub Actions run is green, including the Docker image build, and record the deployed commit/image for rollback.
+- [x] GitHub Actions run `38280845304` is green for release candidate `e184bd9`, including E2E/accessibility and the Docker image build.
+- [ ] Record the actual HelloDeploy commit/image for rollback after production is updated.
 - [x] Playwright E2E/accessibility is included in CI through the isolated `npm run test:e2e:self-contained` release gate (14 tests passed locally on Oct 13).
