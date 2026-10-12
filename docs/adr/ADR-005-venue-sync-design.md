@@ -1,0 +1,16 @@
+# ADR-005: Venue sync protocol
+
+**Context.** Doc 12 requires attendance to keep working without internet, idempotent sync, no last-write-wins on identity or status, and conflicts sent to review.
+
+**Decision.**
+- **Device auth:** an event admin issues a per-device bearer token (shown once, stored as a SHA-256 hash, revocable, scoped to one event).
+- **Pull:** `GET /sync/events/:id/pull?cursor=` returns attendee deltas ordered by `(updatedAt, _id)`, 500 per page, with no contact data. Only changes older than `SYNC_SETTLE_MS` (default 65 s, longer than Mongo's 60 s transaction limit) are served, so in-flight writes can't fall behind the cursor. Household-level edits touch every attendee's `updatedAt`. After catching up, the venue compares a SHA-256 checksum of `attendeeId:revision` for active people against `/roster-summary`. On a mismatch it re-pulls everything once. Rows never move to an older revision.
+- **Push:** a batch of ops, each with a client-generated `opId`. Results are `accepted`, `already_applied`, `rejected` or `needs_review`, and are stored in `sync_operations`, so a replayed op returns its original outcome. Check-ins are unique per `(eventId, attendeeId)`; the first accepted one wins and later ones report `already_checked_in` with the first time. Check-ins for people cancelled online become `needs_review`, never silently counted. Walk-ins carry temporary `W-`/`G-` ids. The cloud creates one `source: venue` registration per group (idempotent on `venueTempId`/`venueGroupId`), never matches by name, and flags possible duplicates for review. The venue then switches its rows to the cloud ids.
+- **Local durability:** SQLite in WAL mode with `synchronous=FULL`. Each check-in commits in an immediate transaction before the UI says "checked in". A partial unique index allows one accepted check-in per attendee across all stations. Automatic backups run every 10 minutes and on shutdown.
+- **Operators:** named local accounts with scrypt-hashed PINs, lockout after 5 failures, 12-hour sessions, `SameSite=Strict` cookies plus a custom-header CSRF check. Lead-only actions: sync and review.
+
+- **Venue corrections (added 2026-10-11):** `attendee_update` carries the `baseRevision` the venue last pulled and applies only if the cloud revision is unchanged; otherwise `needs_review`, and the cloud value returns on the next pull. Repeated offline edits to one person merge into the single pending op. `attendee_add` adds a person to an existing registration (idempotent on `venueTempId`); for a cancelled registration it returns `needs_review`. `checkin_undo` (lead only) deletes only the cloud check-in created by the named venue op; one created by another op returns `needs_review`. An undo before sync never reaches the cloud. Pulls never overwrite a roster row that has pending corrections. Push order: walk-ins → adds → updates → check-ins → undos.
+
+**Not shipped.** A device-only IndexedDB queue and QR scanning (doc 12 stretch goals). Manual lookup is the primary path, with the printed list as fallback.
+
+**Tests.** `apps/api/test/sync.test.ts`, `apps/venue/test/venue.test.ts`, and `scripts/venue-simulation.mjs` (real processes: WAN outage, reboot, conflict, replay).

@@ -1,0 +1,29 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+
+@theme {
+  --color-brand: #397faf;
+  --color-brand-strong: #2f6e99;
+  --color-brand-deep: #205477;
+  --color-brand-ice: #e8f3fa;
+  --color-ink: #243348;
+  --color-ink-muted: #4a5b70;
+  --color-canvas: #f7fafd;
+  --color-line: #d9e6f0;
+  --color-success: #067647;
+  --color-success-bg: #ecfdf3;
+  --color-warning: #b54708;
+  --color-warning-bg: #fffaeb;
+  --color-danger: #b42318;
+  --color-danger-bg: #fef3f2;
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+}
+@layer base {
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+}

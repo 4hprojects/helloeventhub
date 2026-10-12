@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+apps/venue/data/
+apps/venue/backups/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.DS_Store

@@ -1,0 +1,31 @@
+{
+  "name": "@heh/venue",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "HelloEventHub venue check-in server (runs on a local laptop; works without internet).",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/server.ts",
+    "build": "vite build && node build.mjs",
+    "start": "node --env-file-if-exists=.env dist/server.js",
+    "cli": "node --env-file-if-exists=.env dist/cli.js",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@heh/contracts": "*",
+    "better-sqlite3": "11.10.0",
+    "express": "5.1.0",
+    "ulid": "2.4.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "7.6.13",
+    "@types/express": "5.0.5",
+    "@types/supertest": "6.0.3",
+    "esbuild": "0.25.12",
+    "supertest": "7.1.4",
+    "tsx": "4.20.6",
+    "vitest": "3.2.7"
+  }
+}

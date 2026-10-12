@@ -1,0 +1,70 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/plus-jakarta-sans';
+
+/* HelloEventHub design tokens (doc 13). brand-strong is the AA-compliant shade of Glacier Blue
+   used for text and button fills; #397FAF itself is 4.35:1 on white (ADR-002). */
+@theme {
+  --color-brand: #397faf;
+  --color-brand-strong: #2f6e99;
+  --color-brand-deep: #205477;
+  --color-brand-sky: #69a9d1;
+  --color-brand-ice: #e8f3fa;
+  --color-brand-coral: #f28b78;
+  --color-brand-amber: #f0be62;
+  --color-ink: #243348;
+  --color-ink-muted: #4a5b70;
+  --color-canvas: #f7fafd;
+  --color-line: #d9e6f0;
+  --color-success: #067647;
+  --color-success-bg: #ecfdf3;
+  --color-warning: #b54708;
+  --color-warning-bg: #fffaeb;
+  --color-danger: #b42318;
+  --color-danger-bg: #fef3f2;
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Plus Jakarta Sans Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --radius-card: 12px;
+}
+
+/* Base element styles live in the base layer so utility classes (e.g. text-white on a link) win. */
+@layer base {
+html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    line-height: 1.55;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display text-ink;
+    line-height: 1.25;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+  /* Underlined by default so links never rely on color alone (WCAG 1.4.1); nav and button-style links opt out. */
+  a {
+    @apply text-brand-strong underline underline-offset-2 hover:decoration-2;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

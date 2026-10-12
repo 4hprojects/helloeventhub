@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="200" viewBox="0 0 800 200"><rect width="800" height="200" fill="#F8FBFD"/><path d="M0 175 Q400 125 800 177 V200 H0Z" fill="#E8F3FA"/><g transform="translate(30,0) scale(.75)"><g id="celebration-pine">
+<path d="M128 13 C106 47 99 56 82 71 C102 70 113 63 128 50 C143 63 154 70 174 71 C157 57 149 45 128 13Z" fill="#397FAF"/>
+<path d="M123 28 C109 62 86 83 61 102 C80 103 101 97 119 82 Q126 76 128 69 Q131 79 142 86 C164 101 181 104 195 102 C168 82 143 56 133 28 Q131 25 128 21Z" fill="#69A9D1"/>
+<path d="M110 77 C94 106 65 124 40 145 C63 149 91 142 111 129 L128 117 L146 129 C168 144 190 150 217 145 C193 123 161 104 145 77 C142 98 136 106 128 111 C120 106 116 96 110 77Z" fill="#397FAF"/>
+<path d="M101 129 C80 156 57 169 24 190 C52 194 78 187 101 177 L128 166 L153 177 C181 190 205 195 232 190 C198 169 175 153 155 129 L147 151 L128 159 L109 151Z" fill="#205477"/>
+<path d="M81 188 C100 199 112 199 128 192 C146 199 161 200 177 188 C156 209 102 211 81 188Z" fill="#397FAF"/>
+<path d="M119 190 L119 222 L137 222 L137 190" fill="#205477"/>
+<path d="M104 178 L104 113 M152 178 L152 113" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity=".93"/>
+<path d="M104 150 H152" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity=".93"/>
+<path d="M118 120 H140 M118 135 H137 M118 150 H140" stroke="#205477" stroke-width="7" stroke-linecap="round"/>
+<circle cx="58" cy="91" r="7" fill="#F28B78"/><circle cx="198" cy="91" r="7" fill="#F0BE62"/>
+<circle cx="32" cy="153" r="6" fill="#F0BE62"/><circle cx="224" cy="153" r="6" fill="#F28B78"/>
+<circle cx="80" cy="61" r="5" fill="#69A9D1"/><circle cx="176" cy="62" r="5" fill="#F28B78"/>
+</g></g><text x="240" y="98" font-family="DejaVu Sans,Arial,sans-serif" font-size="44" font-weight="bold"><tspan fill="#397FAF">Hello</tspan><tspan fill="#243348">EventHub</tspan></text><text x="242" y="129" fill="#205477" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" letter-spacing="3">PLAN. REGISTER. CONNECT.</text></svg>

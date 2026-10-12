@@ -1,0 +1,52 @@
+{
+  "name": "helloeventhub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "workspaces": [
+    "packages/contracts",
+    "apps/api",
+    "apps/web",
+    "apps/venue"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,green \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
+    "build": "npm run build -w apps/web && npm run build -w apps/api && npm run build -w apps/venue",
+    "start": "node apps/api/dist/server.js",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "npm run test --workspaces --if-present",
+    "test:e2e": "playwright test",
+    "seed": "npm run seed -w apps/api",
+    "create-admin": "npm run create-admin -w apps/api --",
+    "ensure-indexes": "npm run ensure-indexes -w apps/api",
+    "retention": "npm run retention -w apps/api --"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.11.0",
+    "@eslint/js": "9.39.5",
+    "@playwright/test": "1.56.1",
+    "@types/node": "22.19.1",
+    "autocannon": "7.15.0",
+    "concurrently": "9.2.5",
+    "eslint": "9.39.5",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "globals": "16.5.0",
+    "prettier": "3.6.2",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.1"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true,
+    "mongodb-memory-server@10.3.0": true,
+    "@tailwindcss/oxide@4.1.14": true,
+    "better-sqlite3@11.10.0": true
+  },
+  "overrides": {
+    "uuid": "11.1.1"
+  }
+}

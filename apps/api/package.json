@@ -1,0 +1,45 @@
+{
+  "name": "@heh/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=../../.env src/server.ts",
+    "build": "node build.mjs",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "seed": "tsx --env-file=../../.env src/scripts/seed.ts",
+    "create-admin": "tsx --env-file=../../.env src/scripts/create-admin.ts",
+    "ensure-indexes": "tsx --env-file=../../.env src/scripts/ensure-indexes.ts",
+    "retention": "tsx --env-file=../../.env src/scripts/retention.ts"
+  },
+  "dependencies": {
+    "@heh/contracts": "*",
+    "@node-rs/argon2": "2.2.2",
+    "compression": "1.8.2",
+    "connect-mongo": "5.1.0",
+    "exceljs": "4.4.0",
+    "express": "5.1.0",
+    "express-rate-limit": "7.5.1",
+    "express-session": "1.18.2",
+    "helmet": "8.1.0",
+    "mongoose": "8.24.5",
+    "pino": "9.14.0",
+    "pino-http": "10.5.0",
+    "ulid": "2.4.0",
+    "uuid": "11.1.1",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/compression": "1.8.1",
+    "@types/express": "5.0.5",
+    "@types/express-session": "1.18.2",
+    "@types/supertest": "6.0.3",
+    "esbuild": "0.25.12",
+    "mongodb-memory-server": "10.3.0",
+    "supertest": "7.1.4",
+    "tsx": "4.20.6",
+    "vitest": "3.2.7"
+  }
+}
