@@ -82,7 +82,8 @@ function Settings() {
     }
   };
 
-  const openingBlocked = d.registrationStatus === 'open' && !d.privacyNoticeApproved;
+  const hasPublicContact = Boolean(d.contactInfo.email || d.contactInfo.phone || d.contactInfo.messenger);
+  const openingBlocked = d.registrationStatus === 'open' && (!d.privacyNoticeApproved || !hasPublicContact);
 
   return (
     <div className="flex flex-col gap-4">
@@ -105,7 +106,11 @@ function Settings() {
           <div className="mt-4">
             <Checkbox label="Accept late registrations after the headcount cutoff (marked as late)" checked={d.allowLateRegistration} onChange={(e) => set('allowLateRegistration', e.target.checked)} />
           </div>
-          {openingBlocked && <Alert tone="warning" className="mt-4">The privacy notice is not marked as approved. Get organizer approval before opening registration.</Alert>}
+          {openingBlocked && (
+            <Alert tone="warning" className="mt-4">
+              Before opening registration, add an organizer email, phone or Messenger contact and mark the privacy notice as approved.
+            </Alert>
+          )}
         </Card>
         <Card>
           <h2 className="mb-3 text-lg font-semibold">Event details</h2>

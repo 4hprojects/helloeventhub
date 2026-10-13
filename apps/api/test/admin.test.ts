@@ -103,9 +103,21 @@ describe('event scoping and roles', () => {
       contactInfo: { email: 'organizers@example.test' },
       ageCategoryNote: 'Children are 12 and under',
       privacyNotice: ev.privacyNotice,
-      privacyNoticeApproved: false,
+      privacyNoticeApproved: true,
       consentVersion: ev.consentVersion,
     };
+    const missingApproval = await a
+      .patch(`/api/v1/admin/events/${ctx.eventId}`)
+      .set('X-CSRF-Token', csrf)
+      .send({ ...body, privacyNoticeApproved: false })
+      .expect(422);
+    expect(missingApproval.body.error.fieldErrors.privacyNoticeApproved).toBeDefined();
+    const missingContact = await a
+      .patch(`/api/v1/admin/events/${ctx.eventId}`)
+      .set('X-CSRF-Token', csrf)
+      .send({ ...body, contactInfo: {} })
+      .expect(422);
+    expect(missingContact.body.error.fieldErrors['contactInfo.email']).toBeDefined();
     const ok = await a.patch(`/api/v1/admin/events/${ctx.eventId}`).set('X-CSRF-Token', csrf).send(body).expect(200);
     expect(ok.body.venueName).toBe('Confirmed Hall');
     await a.patch(`/api/v1/admin/events/${ctx.eventId}`).set('X-CSRF-Token', csrf).send(body).expect(409);

@@ -24,10 +24,10 @@ export default async function globalSetup(config: FullConfig) {
       preregSnapshotAt: ev.preregSnapshotAt,
       allowLateRegistration: ev.allowLateRegistration,
       capacity: ev.capacity,
-      contactInfo: ev.contactInfo,
+      contactInfo: { ...ev.contactInfo, email: 'organizer@example.test' },
       ageCategoryNote: ev.ageCategoryNote,
       privacyNotice: ev.privacyNotice,
-      privacyNoticeApproved: ev.privacyNoticeApproved,
+      privacyNoticeApproved: true,
       consentVersion: ev.consentVersion,
     };
     const res = await ctx.patch(`/api/v1/admin/events/${eventId}`, { headers: { 'X-CSRF-Token': csrf }, data: body });

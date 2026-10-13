@@ -49,7 +49,7 @@ The current Linux account is not yet a member of the `docker` group, so the veri
 
 - **Architecture:** a clear npm-workspace monorepo with shared Zod contracts, a same-origin React/Express cloud app, and a separate local venue server. Deployment is intentionally one cloud process for the first event.
 - **Data correctness:** MongoDB transactions, idempotency keys, unique indexes, revision preconditions, append-only snapshots, formula-safe exports, and test reconciliation between reports and dashboard counts.
-- **Security/privacy:** event-scoped RBAC, server-side sessions, CSRF and origin checks, Argon2 password hashing and lockout, opaque public IDs/references, rate limits backed by MongoDB, CSP/HSTS, PII-conscious logs, verified owner links, and explicit retention tooling.
+- **Security/privacy:** event-scoped RBAC, server-side sessions, CSRF and origin checks, Argon2 password hashing and lockout, opaque public IDs/references, rate limits backed by MongoDB, CSP/HSTS, PII-conscious logs, verified owner links, and explicit retention tooling. The API refuses to open public registration until a real organizer contact channel is present and the privacy notice is approved.
 - **Failure handling:** durable email outbox with retries, production refusal of unsafe configuration, SQLite WAL plus full synchronization at the venue, duplicate check-in protection, sync idempotency/checksums, backups, and printed fallback procedures.
 - **Documentation:** deployment, testing, venue operations, ADRs, and owner actions are documented. The remaining work can be handed to organizers without reverse-engineering the code.
 

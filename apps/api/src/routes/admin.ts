@@ -137,6 +137,15 @@ export function adminRoutes(deps: AppDeps): Router {
       const startsAt = new Date(body.startsAt);
       const endsAt = new Date(body.endsAt);
       if (endsAt <= startsAt) throw new HttpError(422, 'validation_failed', 'End time must be after start time.', { endsAt: ['Must be after start'] });
+      if (body.registrationStatus === 'open') {
+        const fieldErrors: Record<string, string[]> = {};
+        const hasPublicContact = Boolean(body.contactInfo.email || body.contactInfo.phone || body.contactInfo.messenger);
+        if (!hasPublicContact) fieldErrors['contactInfo.email'] = ['Add an organizer email, phone or Messenger contact before opening registration'];
+        if (!body.privacyNoticeApproved) fieldErrors.privacyNoticeApproved = ['Approve the privacy notice before opening registration'];
+        if (Object.keys(fieldErrors).length) {
+          throw new HttpError(422, 'validation_failed', 'Complete the public contact and privacy requirements before opening registration.', fieldErrors);
+        }
+      }
       const updated = await Event.findOneAndUpdate(
         { _id: ev(req)._id, revision: body.revision },
         {
