@@ -29,7 +29,7 @@ test.describe('public registration (mobile)', () => {
 
     // Step 2
     await expect(page.getByRole('heading', { name: 'Family branch' })).toBeVisible();
-    await page.getByLabel('Family branch').selectOption({ label: 'Toribio' });
+    await page.getByLabel('Family branch').selectOption({ label: '4. Toribio – Virginia Villanueva' });
     await page.getByRole('button', { name: 'Continue' }).click();
 
     // Step 3: rep not attending by default; add 4 people
