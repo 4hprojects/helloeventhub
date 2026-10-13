@@ -16,7 +16,7 @@ The launch risk is now operational, not feature completeness. The repository can
 
 **Recommendation:** freeze feature scope, complete the launch gates below, and do not open registration until the privacy notice, real-email flow, database persistence/restore, and production smoke test are signed off.
 
-**Current production blocker (reverified October 13):** the Cloudflare edge certificate for `helloeventhub.online` is trusted and valid through January 9, 2027, but both `/` and `/api/v1/health` return HTTP 525 (SSL handshake failed). The automated public preflight passes only 3 of 12 checks, and plain HTTP does not redirect to HTTPS. Cloudflare cannot complete TLS to the configured origin. Preferred resolution: configure a valid origin certificate/HTTPS and use Full (strict). Flexible can reach an HTTP-only origin but leaves that hop unencrypted, so it is only a temporary fallback requiring explicit risk acceptance. Recheck `/api/v1/health` before continuing the production smoke test.
+**Current production blocker (reverified October 13):** the Cloudflare edge certificate for `helloeventhub.online` is trusted and valid through January 9, 2027, but both `/` and `/api/v1/health` return HTTP 525 (SSL handshake failed). The automated public preflight currently passes only 3 of 12 reachable checks, and plain HTTP does not redirect to HTTPS. Cloudflare cannot complete TLS to the configured origin. Preferred resolution: configure a valid origin certificate/HTTPS and use Full (strict). Flexible can reach an HTTP-only origin but leaves that hop unencrypted, so it is only a temporary fallback requiring explicit risk acceptance. Recheck `/api/v1/health` before continuing the production smoke test.
 
 ## Evidence from this review
 

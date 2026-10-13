@@ -146,6 +146,11 @@ if (event) {
   );
   record(body.consentVersion === '2026-10-v2', 'Consent version', String(body.consentVersion));
   record(
+    body.registrationOpen === true,
+    'Online registration open',
+    body.registrationOpen ? 'open' : body.registrationMessage || 'closed',
+  );
+  record(
     Array.isArray(body.categories) && body.categories.length >= 1,
     'Family categories',
     `${body.categories?.length ?? 0} active`,
