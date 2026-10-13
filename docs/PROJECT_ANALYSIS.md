@@ -32,8 +32,8 @@ Run locally from a clean `main` checkout after `npm ci`:
 | Browser E2E/accessibility | **14 passed** | Mobile and desktop; registration, owner link, admin, exports, snapshots, keyboard path, responsive overflow, automated WCAG A/AA scans |
 | Production dependency audit | Pass | `npm audit --omit=dev`: 0 vulnerabilities |
 | Full dependency audit | Attention | 3 development-only findings: 1 moderate and 2 critical in Vitest 3 / transitive test-runner packages; remediation requires Vitest 4 |
-| GitHub Actions release gate | **Pass** | Run `38338903778` for commit `efc4001`: lint, types, 146 tests, builds, 14 browser/accessibility tests and Docker image build |
-| Docker image build | **Pass in CI** | Root production image built successfully in GitHub Actions run `38338903778` |
+| GitHub Actions release gate | **Pass** | Run `38347593733` for commit `61d2562`: lint, types, 153 tests, builds, 14 browser/accessibility tests, offline/reconnect venue simulation and Docker image build |
+| Docker image build | **Pass in CI** | Root production image built successfully in GitHub Actions run `38347593733` |
 | Local development smoke test | **Pass** | API and Vite proxy health, seeded public event, admin login/dashboard and 14 browser scenarios verified on October 13 |
 | External services/hardware | Not verified | Requires owner access and the manual checklists |
 
@@ -64,7 +64,7 @@ Confirmed October 13 decisions: the venue remains publicly **“Venue to be anno
 3. **Prove backup recovery.** Enable Atlas backups or a scheduled `mongodump`, then restore into a separate database and record the result. An untested backup is not a release gate pass.
 4. **Run the real-service smoke test.** With fake data: register, receive mail in Gmail/Yahoo/Outlook, open the manage link, edit RSVP, cancel, search/edit as staff, export XLSX/CSV, and check failed-email visibility. Confirm Turnstile is using production keys and that email authentication/spam placement is acceptable.
 5. **Create named staff accounts and confirm least privilege.** No shared credentials. Verify one event admin and one committee account end to end, including forced password change and reset/revocation behavior.
-6. **Capture release evidence.** The browser suite is now a required CI check using an isolated database. GitHub Actions run `38338903778` is green for release candidate `efc4001`, including all 146 tests, E2E and the Docker build. Record the actual deployed commit/image after HelloDeploy updates production.
+6. **Capture release evidence.** The browser and venue rehearsal suites are required CI checks using an isolated database. GitHub Actions run `38347593733` is green for release candidate `61d2562`, including all 153 tests, E2E/accessibility, venue reconciliation and the Docker build. Record the actual deployed commit/image after HelloDeploy updates production.
 
 **Launch rule:** keep registration in `draft` until items 1–6 are signed off. If HelloDeploy cannot pass the smoke test promptly, use the documented alternate-host decision instead of weakening the gates.
 

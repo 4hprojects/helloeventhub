@@ -39,7 +39,7 @@
 - [x] P1-05 Duplicate check-in lock and transaction/outbox log.
 - [x] P1-06 Walk-in and late-change handling.
 - [x] P1-07 Sync protocol with cloud, cursor/replay protection and reconciliation.
-- [ ] P1-08 QR camera scanning only after manual lookup passes. *(not shipped by decision — stretch; manual lookup is primary)*
+- [x] P1-08 QR camera scanning only after manual lookup passes. *(not shipped by decision — manual lookup is the supported primary method)*
 - [ ] P1-09 Printed fallback, device training and disconnected rehearsal. *(printed roster implemented; training/rehearsal is owner — docs/VENUE_RUNBOOK.md)*
 
 ## Decisions requiring owner signoff

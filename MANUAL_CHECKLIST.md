@@ -96,7 +96,7 @@ MONGODB_URI='…' SESSION_SECRET='…' npm run create-admin -- --email member@ex
 - [ ] Pull the roster and confirm `verified: true`.
 - [ ] **Rehearsal by Oct 23** with the WAN unplugged: run the whole checklist in the runbook on the actual phones.
 - [ ] Printed roster and blank walk-in sheets ready; reconciliation owner assigned; training done.
-- [ ] Decision recorded: **QR scanning is not shipped**; manual search is the primary method.
+- [x] Decision recorded: **QR scanning is not shipped**; manual search is the primary method.
 
 ## 9. After the event
 
@@ -113,7 +113,7 @@ MONGODB_URI='…' SESSION_SECRET='…' npm run create-admin -- --email member@ex
 ## 10. Code hand-off decisions
 
 - [x] Repository is committed on `main`, connected to `origin`, and includes `.github/workflows/ci.yml`.
-- [x] GitHub Actions run `38338903778` is green for release candidate `efc4001`, including 146 unit/integration tests, E2E/accessibility and the Docker image build.
+- [x] GitHub Actions run `38347593733` is green for release candidate `61d2562`, including 153 unit/integration tests, E2E/accessibility, the offline/reconnect venue simulation and the Docker image build.
 - [ ] Record the actual HelloDeploy commit/image for rollback after production is updated.
 - [x] Playwright E2E/accessibility and the offline/reconnect venue simulation are included in CI through the isolated `npm run test:e2e:self-contained` release gate (14 browser scenarios plus venue reconciliation).
 - [x] Local frontend/API port mismatch fixed; public event, admin login/dashboard and all 14 browser scenarios passed against a temporary local replica set on Oct 13. Local registration is open for organizer review; this does not change production.
