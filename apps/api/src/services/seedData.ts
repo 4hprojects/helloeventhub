@@ -5,7 +5,7 @@ export const PRIMARY_EVENT_SLUG = 'alsem-reunion-2026';
 
 export const FAMILY_BRANCHES = [
   '1a. Albin – Baon Tinay',
-  '2b. Albin – Magastino',
+  '1b. Albin – Magastino',
   '2. Magdalena – Palaez Mat-an',
   '3. Mary – Francisco Marino',
   '4. Toribio – Virginia Villanueva',
@@ -18,7 +18,18 @@ export const FAMILY_BRANCHES = [
 
 // Existing installations started with these shorter labels. Seed upgrades rename
 // the same records so registrations keep their category references and history.
-const LEGACY_FAMILY_BRANCHES = ['Albina', null, 'Magdalena', 'Mary', 'Toribio', 'Ganzon', 'Onofre', 'Mistihil', 'Denio', 'Other/Unsure'];
+const LEGACY_FAMILY_BRANCHES = [
+  'Albina',
+  '2b. Albin – Magastino',
+  'Magdalena',
+  'Mary',
+  'Toribio',
+  'Ganzon',
+  'Onofre',
+  'Mistihil',
+  'Denio',
+  'Other/Unsure',
+];
 
 export const DRAFT_PRIVACY_NOTICE = `PENDING ORGANIZER APPROVAL — a public contact channel must be added before registration opens.
 
