@@ -19,7 +19,7 @@ describe('GET /events/:slug', () => {
     expect(res.body.title).toContain('Alsem');
     expect(res.body.registrationOpen).toBe(true);
     expect(res.body.venueName).toBeNull();
-    expect(res.body.categories).toHaveLength(9);
+    expect(res.body.categories).toHaveLength(10);
     expect(Object.keys(res.body)).not.toEqual(expect.arrayContaining(['registrations']));
     expect(Object.keys(res.body)).not.toEqual(expect.arrayContaining(['attendees']));
   });

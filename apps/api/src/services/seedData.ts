@@ -4,16 +4,21 @@ import { Event, EventCategory, Organization } from '../db/models.js';
 export const PRIMARY_EVENT_SLUG = 'alsem-reunion-2026';
 
 export const FAMILY_BRANCHES = [
-  'Albina',
-  'Magdalena',
-  'Mary',
-  'Toribio',
-  'Ganzon',
-  'Onofre',
-  'Mistihil',
-  'Denio',
+  '1a. Albin – Baon Tinay',
+  '2b. Albin – Magastino',
+  '2. Magdalena – Palaez Mat-an',
+  '3. Mary – Francisco Marino',
+  '4. Toribio – Virginia Villanueva',
+  '5. Ganzon – Pilar Licdan',
+  '6. Onofre – Belen Wagsi',
+  '7. Mistihil – Zenaida Calado',
+  '8. Denio – Pacita Guzman',
   'Other/Unsure',
 ];
+
+// Existing installations started with these shorter labels. Seed upgrades rename
+// the same records so registrations keep their category references and history.
+const LEGACY_FAMILY_BRANCHES = ['Albina', null, 'Magdalena', 'Mary', 'Toribio', 'Ganzon', 'Onofre', 'Mistihil', 'Denio', 'Other/Unsure'];
 
 export const DRAFT_PRIVACY_NOTICE = `PENDING ORGANIZER APPROVAL — a public contact channel must be added before registration opens.
 
@@ -69,8 +74,19 @@ export async function seedPrimaryEvent() {
   let createdCategories = 0;
   for (const [i, label] of FAMILY_BRANCHES.entries()) {
     const labelNormalized = normalizeName(label);
-    const exists = await EventCategory.exists({ eventId: event._id, labelNormalized });
-    if (!exists) {
+    let existing = await EventCategory.findOne({ eventId: event._id, labelNormalized });
+    const legacyLabel = LEGACY_FAMILY_BRANCHES[i];
+    if (!existing && legacyLabel) {
+      existing = await EventCategory.findOne({ eventId: event._id, labelNormalized: normalizeName(legacyLabel) });
+      if (existing) {
+        existing.label = label;
+        existing.labelNormalized = labelNormalized;
+        existing.sortOrder = i * 10;
+        existing.provisional = false;
+        await existing.save();
+      }
+    }
+    if (!existing) {
       await EventCategory.create({
         organizationId: org._id,
         eventId: event._id,

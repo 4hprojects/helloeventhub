@@ -55,7 +55,7 @@ The current Linux account is not yet a member of the `docker` group, so the veri
 
 ## Priority work
 
-Confirmed October 13 decisions: the venue remains publicly **“Venue to be announced”**; organizer and privacy controller is **Ruby Sagorsor**; the official title and short description are approved; child means age 12 or younger; the planning cutoff is October 20 at 23:59 Asia/Manila; late registrations remain allowed; capacity is unlimited; self-service changes close at the October 24 program start; and the current family-branch list is accepted with Other/Unsure as a fallback. Identifiable data is deleted or anonymized by January 22, 2027. Ruby's public contact channel and final privacy-notice approval remain pending.
+Confirmed October 13 decisions: the venue remains publicly **“Venue to be announced”**; organizer and privacy controller is **Ruby Sagorsor**; the official title and short description are approved; child means age 12 or younger; the planning cutoff is October 20 at 23:59 Asia/Manila; late registrations remain allowed; capacity is unlimited; self-service changes close at the October 24 program start; and the organizer supplied the numbered Albin–Denio branch/couple labels, with Other/Unsure retained as a fallback. Identifiable data is deleted or anonymized by January 22, 2027. Ruby's public contact channel and final privacy-notice approval remain pending.
 
 ### P0 — launch blockers, October 13–14
 

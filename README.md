@@ -34,7 +34,7 @@ Requirements: Node 22+, Docker.
 npm install
 cp .env.example .env                 # dev defaults; never commit real secrets
 docker compose up -d                 # MongoDB single-node replica set on 127.0.0.1:27017
-npm run seed                         # organization, event (registration in "draft"), 9 editable family branches
+npm run seed                         # organization, event (registration in "draft"), 10 editable family-branch choices
 ADMIN_PASSWORD='choose-a-long-password' npm run create-admin -- --email you@example.com --name "Your Name" --role event_admin
 npm run dev                          # API on $PORT, web on :5173 (proxying /api to the same port)
 ```

@@ -20,7 +20,7 @@ Legend: 🔴 blocks the public launch (target **Oct 15**) · 🟠 needed by **Oc
 | [x] Late registration after the cutoff | Allowed, marked "late" | Settings → Accept late registrations |
 | [x] Capacity | No limit | Settings → Capacity (leave empty) |
 | [x] Online changes deadline | Until program start, Oct 24 at 09:00 | Settings → Online changes allowed until |
-| [x] Family branch labels | Albina, Magdalena, Mary, Toribio, Ganzon, Onofre, Mistihil, Denio, Other/Unsure | Settings → Family branches |
+| [x] Family branch labels | Numbered Albin–Denio branch/couple labels supplied by the organizer, plus Other/Unsure | Settings → Family branches |
 | [ ] **Privacy notice approval and contact channel** | Controller: Ruby Sagorsor; delete/anonymize by Jan 22, 2027; notice v2 drafted | Add Ruby's public contact, review the notice, then tick "approved" |
 | [ ] Who is event admin vs committee | — | See §5 |
 

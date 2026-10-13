@@ -19,7 +19,7 @@ HelloEventHub is a scalable event-registration and management platform. The firs
 - Event detail page with date/time and editable venue and details.
 - Household or individual registration; representative contact via email, mobile or Messenger; **at least one** required.
 - Per-person name, adult/child category and RSVP (`confirmed`, `tentative`, `declined`). Representative not implicitly included.
-- Optional event-specific family branch: Albina, Magdalena, Mary, Toribio, Ganzon, Onofre, Mistihil, Denio, Other/Unsure. These labels are provisional and admin-editable.
+- Optional event-specific family branch: the organizer-supplied numbered Albin–Denio branch/couple labels, plus Other/Unsure. These labels are stored per event and remain admin-editable.
 - Privacy acknowledgment, backend validation, spam protection and idempotent submission.
 - Persist data; display non-secret reference and brief summary. Send email via Resend only where verified/supplied as appropriate; never block successful submission on email availability.
 - Verified email-based self-service management or authorized committee-assisted edits for other contacts. No insecure lookup by reference alone.
