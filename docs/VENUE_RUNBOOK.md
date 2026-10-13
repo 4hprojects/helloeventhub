@@ -44,7 +44,7 @@ cp apps/venue/.env.example apps/venue/.env
 - [ ] Print the list (header → **Print list**).
 - [ ] Assign roles: station operators, lead (sync and review), reconciliation owner.
 
-Automated version of this rehearsal for developers: `node scripts/venue-simulation.mjs` (against a local or staging cloud).
+Automated version of this rehearsal for developers: `node scripts/venue-simulation.mjs` (against a local or staging cloud). The isolated version runs after the browser scenarios in `npm run test:e2e:self-contained` and is a required CI release gate. Set `KEEP_VENUE_SIM_DATA=true` only when the temporary SQLite data is needed for debugging.
 
 ## Event morning (Oct 24, from 07:00)
 

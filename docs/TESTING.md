@@ -23,7 +23,7 @@ npm run test:e2e:self-contained
 
 If Playwright does not provide a browser build for the host OS but Chromium is already installed, set its path, for example `PW_CHROMIUM_PATH=/snap/bin/chromium npm run test:e2e:self-contained`.
 
-The self-contained runner creates a temporary MongoDB replica set and mailbox, seeds an event and admin, starts the production API/web build, runs Playwright, and removes the temporary resources. Set `E2E_PORT` if port 3210 is unavailable. CI runs this path after the unit/integration tests and production build.
+The self-contained runner creates a temporary MongoDB replica set and mailbox, seeds an event and admin, starts the production API/web build, runs Playwright, runs the venue offline/reconnect simulation, and removes the temporary resources. Set `E2E_PORT` if port 3210 is unavailable. CI runs this path after the unit/integration tests and production build.
 
 ## Load check (Oct 11, 2026)
 

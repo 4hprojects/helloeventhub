@@ -9,7 +9,7 @@
 // Creates clearly-marked test registrations ("SIM ...") — run against local/staging only.
 import { spawn, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync, readdirSync } from 'node:fs';
+import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -252,5 +252,7 @@ try {
 } finally {
   await stopVenue();
 }
-console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}  (venue data: ${dataDir})`);
+const kept = process.env.KEEP_VENUE_SIM_DATA === 'true';
+if (!kept) rmSync(dataDir, { recursive: true, force: true });
+console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}${kept ? `  (venue data: ${dataDir})` : ''}`);
 process.exit(failures === 0 ? 0 : 1);

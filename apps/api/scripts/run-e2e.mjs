@@ -8,10 +8,11 @@ import { MongoMemoryReplSet } from 'mongodb-memory-server';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const apiBuild = path.join(root, 'apps/api/dist/server.js');
 const webBuild = path.join(root, 'apps/web/dist/index.html');
+const venueBuild = path.join(root, 'apps/venue/dist/server.js');
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
-if (!existsSync(apiBuild) || !existsSync(webBuild)) {
-  throw new Error('Production build not found. Run `npm run build` before the self-contained E2E suite.');
+if (!existsSync(apiBuild) || !existsSync(webBuild) || !existsSync(venueBuild)) {
+  throw new Error('Production builds not found. Run `npm run build` before the self-contained release suite.');
 }
 
 const port = process.env.E2E_PORT ?? '3210';
@@ -39,6 +40,8 @@ const env = {
   E2E_ADMIN_EMAIL: 'admin@local.test',
   E2E_ADMIN_PASSWORD: 'local-dev-password-123',
   ADMIN_PASSWORD: 'local-dev-password-123',
+  CLOUD: baseUrl,
+  SYNC_SETTLE_MS: '1000',
   LOG_LEVEL: process.env.LOG_LEVEL ?? 'warn',
 };
 
@@ -100,6 +103,7 @@ try {
   server = spawn(process.execPath, [apiBuild], { cwd: root, env, stdio: 'inherit' });
   await waitForServer(server);
   await run(npm, ['run', 'test:e2e']);
+  await run(process.execPath, ['scripts/venue-simulation.mjs']);
 } finally {
   await stopServer(server);
   await replSet.stop();
