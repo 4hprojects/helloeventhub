@@ -37,6 +37,8 @@ const envSchema = z
     if (e.TURNSTILE_DISABLED) fail('TURNSTILE_DISABLED', 'Turnstile cannot be disabled in production');
     if (!e.TURNSTILE_SECRET_KEY || !e.TURNSTILE_SITE_KEY)
       fail('TURNSTILE_SECRET_KEY', 'Turnstile keys are required in production');
+    if (e.TURNSTILE_SITE_KEY.startsWith('1x0000') || e.TURNSTILE_SITE_KEY.startsWith('2x0000'))
+      fail('TURNSTILE_SITE_KEY', 'Turnstile test keys are not allowed in production');
     if (e.TURNSTILE_SECRET_KEY.startsWith('1x0000') || e.TURNSTILE_SECRET_KEY.startsWith('2x0000'))
       fail('TURNSTILE_SECRET_KEY', 'Turnstile test keys are not allowed in production');
     if (/change-me/.test(e.SESSION_SECRET)) fail('SESSION_SECRET', 'Set a real SESSION_SECRET in production');

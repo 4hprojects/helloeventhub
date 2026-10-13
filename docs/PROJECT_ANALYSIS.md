@@ -16,7 +16,7 @@ The launch risk is now operational, not feature completeness. The repository can
 
 **Recommendation:** freeze feature scope, complete the launch gates below, and do not open registration until the privacy notice, real-email flow, database persistence/restore, and production smoke test are signed off.
 
-**Current production blocker (verified October 13):** `helloeventhub.online` resolves through Cloudflare, but both `/` and `/api/v1/health` return HTTP 525 (SSL handshake failed). Cloudflare cannot complete TLS to the configured origin. Preferred resolution: configure a valid origin certificate/HTTPS and use Full (strict). Flexible can reach an HTTP-only origin but leaves that hop unencrypted, so it is only a temporary fallback requiring explicit risk acceptance. Recheck `/api/v1/health` before continuing the production smoke test.
+**Current production blocker (reverified October 13):** the Cloudflare edge certificate for `helloeventhub.online` is trusted and valid through January 9, 2027, but both `/` and `/api/v1/health` return HTTP 525 (SSL handshake failed). The automated public preflight passes only 3 of 12 checks, and plain HTTP does not redirect to HTTPS. Cloudflare cannot complete TLS to the configured origin. Preferred resolution: configure a valid origin certificate/HTTPS and use Full (strict). Flexible can reach an HTTP-only origin but leaves that hop unencrypted, so it is only a temporary fallback requiring explicit risk acceptance. Recheck `/api/v1/health` before continuing the production smoke test.
 
 ## Evidence from this review
 
@@ -24,16 +24,16 @@ Run locally from a clean `main` checkout after `npm ci`:
 
 | Check | Result | Notes |
 |---|---:|---|
-| Git state before review | Clean | `main` matched `origin/main`; two commits exist |
+| Git state before review | Clean | `main` matched `origin/main` at the recorded review point |
 | Lint | Pass | ESLint across the repository |
 | Type checking | Pass | All four workspaces |
 | Production builds | Pass | Web, API, and venue |
-| Unit/integration tests | **146 passed** | 21 contracts, 96 API, 11 web, 18 venue |
+| Unit/integration tests | **153 passed** | 21 contracts, 103 API, 11 web, 18 venue |
 | Browser E2E/accessibility | **14 passed** | Mobile and desktop; registration, owner link, admin, exports, snapshots, keyboard path, responsive overflow, automated WCAG A/AA scans |
 | Production dependency audit | Pass | `npm audit --omit=dev`: 0 vulnerabilities |
 | Full dependency audit | Attention | 3 development-only findings: 1 moderate and 2 critical in Vitest 3 / transitive test-runner packages; remediation requires Vitest 4 |
-| GitHub Actions release gate | **Pass** | Run `38280845304` for commit `e184bd9`: lint, types, 142 tests, builds, 14 browser/accessibility tests and Docker image build |
-| Docker image build | **Pass in CI** | Root production image built successfully in GitHub Actions run `38280845304` |
+| GitHub Actions release gate | **Pass** | Run `38338903778` for commit `efc4001`: lint, types, 146 tests, builds, 14 browser/accessibility tests and Docker image build |
+| Docker image build | **Pass in CI** | Root production image built successfully in GitHub Actions run `38338903778` |
 | Local development smoke test | **Pass** | API and Vite proxy health, seeded public event, admin login/dashboard and 14 browser scenarios verified on October 13 |
 | External services/hardware | Not verified | Requires owner access and the manual checklists |
 
@@ -41,7 +41,7 @@ The E2E run used an isolated MongoDB replica set and a local production build. I
 
 ### Local development recovery (October 13)
 
-The public-page error at `localhost:5173` was caused by two local conditions: the API had stopped because MongoDB was unavailable, and `.env` configured API port 3009 while Vite still proxied to port 3000. Vite now reads the root `.env` port automatically, with `API_PROXY_TARGET` retained as an explicit override. The local `.env` was returned to the standard port 3000, the event was reseeded, and public event loading plus admin login/dashboard were verified in a real browser. All 14 E2E/accessibility scenarios passed against the restored stack; registration was returned to `draft` afterward.
+The public-page error at `localhost:5173` was caused by two local conditions: the API had stopped because MongoDB was unavailable, and `.env` configured API port 3009 while Vite still proxied to port 3000. Vite now reads the root `.env` port automatically, with `API_PROXY_TARGET` retained as an explicit override. The local `.env` was returned to the standard port 3000, the event was reseeded, and public event loading plus admin login/dashboard were verified in a real browser. All 14 E2E/accessibility scenarios passed against the restored stack. Local registration is currently open for organizer review; production remains unavailable and unverified.
 
 The current Linux account is not yet a member of the `docker` group, so the verification used the repository's temporary MongoDB replica-set tooling. Persistent local development still requires the owner to add the account to that group (or otherwise grant Docker access), sign out and back in, and start `docker compose up -d`.
 
@@ -64,7 +64,7 @@ Confirmed October 13 decisions: the venue remains publicly **“Venue to be anno
 3. **Prove backup recovery.** Enable Atlas backups or a scheduled `mongodump`, then restore into a separate database and record the result. An untested backup is not a release gate pass.
 4. **Run the real-service smoke test.** With fake data: register, receive mail in Gmail/Yahoo/Outlook, open the manage link, edit RSVP, cancel, search/edit as staff, export XLSX/CSV, and check failed-email visibility. Confirm Turnstile is using production keys and that email authentication/spam placement is acceptable.
 5. **Create named staff accounts and confirm least privilege.** No shared credentials. Verify one event admin and one committee account end to end, including forced password change and reset/revocation behavior.
-6. **Capture release evidence.** The browser suite is now a required CI check using an isolated database. GitHub Actions run `38280845304` is green for release candidate `e184bd9`, including E2E and the Docker build. Record the actual deployed commit/image after HelloDeploy updates production.
+6. **Capture release evidence.** The browser suite is now a required CI check using an isolated database. GitHub Actions run `38338903778` is green for release candidate `efc4001`, including all 146 tests, E2E and the Docker build. Record the actual deployed commit/image after HelloDeploy updates production.
 
 **Launch rule:** keep registration in `draft` until items 1–6 are signed off. If HelloDeploy cannot pass the smoke test promptly, use the documented alternate-host decision instead of weakening the gates.
 
