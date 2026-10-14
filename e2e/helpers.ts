@@ -3,7 +3,7 @@ import path from 'node:path';
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
 
 export const ADMIN = { email: process.env.E2E_ADMIN_EMAIL ?? 'admin@local.test', password: process.env.E2E_ADMIN_PASSWORD ?? 'local-dev-password-123' };
-export const SLUG = process.env.E2E_EVENT_SLUG ?? 'alsem-reunion-2026';
+export const SLUG = process.env.E2E_EVENT_SLUG ?? 'mb-wa-reunion-2026';
 
 export async function adminApi(request: APIRequestContext) {
   const s = await (await request.get('/api/v1/auth/session')).json();

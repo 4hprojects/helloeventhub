@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
-import { Alert, Button, Card, TextField } from '../../components/ui';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
+import { Alert, Button, Card, PasswordField, TextField } from '../../components/ui';
 import type { ApiError } from '../../lib/api';
 import { useSession } from '../../lib/session';
 
@@ -19,6 +19,9 @@ export default function LoginPage() {
       <img src="/brand/logo-stacked.svg" alt="HelloEventHub" className="mx-auto mb-6 h-24 w-auto" width={150} height={96} />
       <Card>
         <h1 className="mb-4 text-xl font-bold">Committee sign in</h1>
+        <p className="mb-4 text-sm text-ink-muted">
+          This area is for event staff. Attendees can <Link to="/">open the public event page</Link> and register without an account.
+        </p>
         <form
           className="flex flex-col gap-4"
           onSubmit={async (e) => {
@@ -36,13 +39,14 @@ export default function LoginPage() {
         >
           {err && <Alert tone="error">{err}</Alert>}
           <TextField label="Email" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          <TextField label="Password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+          <PasswordField label="Password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
           <Button type="submit" loading={busy}>
             Sign in
           </Button>
         </form>
       </Card>
       <p className="mt-4 text-center text-sm text-ink-muted">Forgot your password? Ask your event admin to reset it.</p>
+      <Link to="/" className="mt-3 inline-flex min-h-11 items-center justify-center text-sm">Back to the public site</Link>
     </main>
   );
 }

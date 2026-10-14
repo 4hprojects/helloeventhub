@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Button, Card, PageTitle, TextField } from '../../components/ui';
+import { Alert, Button, Card, PageTitle, PasswordField } from '../../components/ui';
 import type { ApiError} from '../../lib/api';
 import { api, setCsrfToken } from '../../lib/api';
 import { useSession } from '../../lib/session';
@@ -46,8 +46,8 @@ export default function AccountPage() {
           }}
         >
           {msg && <Alert tone={msg.tone}>{msg.text}</Alert>}
-          <TextField label="Current password" type="password" autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} error={errors.currentPassword?.[0]} />
-          <TextField label="New password" type="password" autoComplete="new-password" required hint="At least 12 characters." value={next} onChange={(e) => setNext(e.target.value)} error={errors.newPassword?.[0]} />
+          <PasswordField label="Current password" autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} error={errors.currentPassword?.[0]} />
+          <PasswordField label="New password" autoComplete="new-password" required hint="At least 12 characters." value={next} onChange={(e) => setNext(e.target.value)} error={errors.newPassword?.[0]} />
           <Button type="submit" loading={busy} className="self-start">
             Change password
           </Button>

@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CLOUD = process.env.CLOUD ?? 'http://localhost:3210';
 const ADMIN = { email: process.env.ADMIN_EMAIL ?? 'admin@local.test', password: process.env.ADMIN_PASSWORD ?? 'local-dev-password-123' };
-const SLUG = process.env.EVENT_SLUG ?? 'alsem-reunion-2026';
+const SLUG = process.env.EVENT_SLUG ?? 'mb-wa-reunion-2026';
 const VENUE_PORT = Number(process.env.VENUE_PORT ?? 8091);
 const VENUE = `http://127.0.0.1:${VENUE_PORT}`;
 const DEAD_CLOUD = 'http://127.0.0.1:9'; // nothing listens here: simulates "no internet"

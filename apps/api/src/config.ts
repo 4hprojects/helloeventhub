@@ -27,7 +27,7 @@ const envSchema = z
     TURNSTILE_DISABLED: bool.default('false'),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
     WEB_DIST_DIR: z.string().optional(),
-    PRIMARY_EVENT_SLUG: z.string().default('alsem-reunion-2026'),
+    PRIMARY_EVENT_SLUG: z.string().default('mb-wa-reunion-2026'),
     /** Venue pulls only see changes older than this (covers in-flight transactions). */
     SYNC_SETTLE_MS: z.coerce.number().int().min(0).default(65_000),
   })

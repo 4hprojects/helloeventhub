@@ -39,7 +39,7 @@ test('admin pages pass automated WCAG AA checks', async ({ page }) => {
   await page.goto('/admin/login');
   await expectNoViolations(page, 'admin login');
   await page.getByLabel('Email').fill(ADMIN.email);
-  await page.getByLabel('Password').fill(ADMIN.password);
+  await page.getByRole('textbox', { name: 'Password', exact: true }).fill(ADMIN.password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.getByRole('heading', { name: 'Headcount' })).toBeVisible();
   await expectNoViolations(page, 'dashboard');

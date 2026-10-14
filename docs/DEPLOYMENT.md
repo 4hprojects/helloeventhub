@@ -46,7 +46,7 @@ Set these in HelloDeploy's secret store. **Never commit them.**
 | `EMAIL_REPLY_TO` | organizer inbox (optional) |
 | `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | real keys; test keys are refused in production |
 | `TURNSTILE_FAIL_OPEN` | `true` (accept-and-flag with a strict per-IP limit if Cloudflare is unreachable) |
-| `PRIMARY_EVENT_SLUG` | `alsem-reunion-2026` |
+| `PRIMARY_EVENT_SLUG` | `mb-wa-reunion-2026` |
 | `SYNC_SETTLE_MS` | `65000` (leave default) |
 | `LOG_LEVEL` | `info` |
 

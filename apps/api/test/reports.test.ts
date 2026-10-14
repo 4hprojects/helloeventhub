@@ -57,7 +57,7 @@ describe('exports', () => {
   it('attendee CSV has BOM, defanged cells and reconciles with the dashboard', async () => {
     const res = await exp({ format: 'csv', view: 'attendees' }).expect(200);
     expect(res.headers['content-type']).toContain('text/csv');
-    expect(res.headers['content-disposition']).toMatch(/attachment; filename="alsem-reunion-2026-attendees-\d+\.csv"/);
+    expect(res.headers['content-disposition']).toMatch(/attachment; filename="mb-wa-reunion-2026-attendees-\d+\.csv"/);
     expect(res.text.charCodeAt(0)).toBe(0xfeff);
     expect(res.text).toContain("'+Cmd Injection");
     expect(res.text).toContain('"Normal, ""Quoted"" Name"');

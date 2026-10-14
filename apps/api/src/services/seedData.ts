@@ -1,7 +1,8 @@
 import { normalizeName } from '@heh/contracts';
 import { Event, EventCategory, Organization } from '../db/models.js';
 
-export const PRIMARY_EVENT_SLUG = 'alsem-reunion-2026';
+export const PRIMARY_EVENT_SLUG = 'mb-wa-reunion-2026';
+const LEGACY_PRIMARY_EVENT_SLUG = 'alsem-reunion-2026';
 
 export const FAMILY_BRANCHES = [
   '1a. Albin – Baon Tinay',
@@ -54,6 +55,14 @@ export async function seedPrimaryEvent() {
     (await Organization.create({ slug: 'menay-wakat-alsem', name: 'Menay Bugtong–Wakat Alsem Clan' }));
 
   let event = await Event.findOne({ slug: PRIMARY_EVENT_SLUG });
+  if (!event) {
+    event = await Event.findOne({ slug: LEGACY_PRIMARY_EVENT_SLUG });
+    if (event) {
+      event.slug = PRIMARY_EVENT_SLUG;
+      event.revision += 1;
+      await event.save();
+    }
+  }
   const createdEvent = !event;
   if (!event) {
     event = await Event.create({

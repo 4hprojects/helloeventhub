@@ -1,7 +1,7 @@
 import tls from 'node:tls';
 
 const baseUrl = new URL(process.env.BASE_URL ?? 'https://helloeventhub.online');
-const eventSlug = process.env.EVENT_SLUG ?? 'alsem-reunion-2026';
+const eventSlug = process.env.EVENT_SLUG ?? 'mb-wa-reunion-2026';
 const timeoutMs = Number(process.env.PREFLIGHT_TIMEOUT_MS ?? 10_000);
 const results = [];
 

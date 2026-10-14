@@ -1,6 +1,6 @@
 // Post-event data retention (doc 08). Usage:
-//   npm run retention -- --event alsem-reunion-2026 --mode anonymize            (dry run: shows what would change)
-//   npm run retention -- --event alsem-reunion-2026 --mode anonymize --apply --confirm alsem-reunion-2026
+//   npm run retention -- --event mb-wa-reunion-2026 --mode anonymize            (dry run: shows what would change)
+//   npm run retention -- --event mb-wa-reunion-2026 --mode anonymize --apply --confirm mb-wa-reunion-2026
 // Take an Atlas backup first. Refuses to run before the event has ended unless --force.
 import { parseArgs } from 'node:util';
 import mongoose from 'mongoose';

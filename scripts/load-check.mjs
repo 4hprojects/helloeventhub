@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 import autocannon from 'autocannon';
 
 const BASE = process.env.BASE ?? 'http://localhost:3210';
-const SLUG = process.env.EVENT_SLUG ?? 'alsem-reunion-2026';
+const SLUG = process.env.EVENT_SLUG ?? 'mb-wa-reunion-2026';
 const ADMIN = { email: process.env.ADMIN_EMAIL ?? 'admin@local.test', password: process.env.ADMIN_PASSWORD ?? 'local-dev-password-123' };
 const DURATION = Number(process.env.DURATION ?? 15);
 const CONNECTIONS = Number(process.env.CONNECTIONS ?? 20);

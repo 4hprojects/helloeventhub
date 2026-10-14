@@ -170,7 +170,7 @@ export function ContactSection({ state, setState, errors, lockContacts }: Sectio
         disabled={lockContacts}
       >
         <legend className="px-1 text-sm font-semibold">
-          How can the organizers reach you? <span className="text-danger">Give at least one.</span>
+          How can the organizers reach you? <span className="font-normal text-ink-muted">Give at least one.</span>
         </legend>
         {groupError && (
           <p id="rep-contacts-error" className="text-sm font-medium text-danger">

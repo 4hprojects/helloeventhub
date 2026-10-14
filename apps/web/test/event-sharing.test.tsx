@@ -30,12 +30,16 @@ describe('event sharing', () => {
     expect(screen.getByText('Event link copied.')).toBeInTheDocument();
   });
 
-  it('creates an organizer QR download for the public event page', async () => {
+  it('creates organizer links and QR downloads for the event and registration pages', async () => {
     render(<OrganizerEventShare slug="family-day" title="Family Day" />);
 
     expect(screen.getByText('http://localhost:3000/events/family-day')).toBeInTheDocument();
-    expect(await screen.findByRole('img', { name: 'QR code for Family Day' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Download QR code' })).toHaveAttribute('download', 'family-day-qr.png');
+    expect(screen.getByText('http://localhost:3000/events/family-day/register')).toBeInTheDocument();
+    expect(await screen.findByRole('img', { name: 'QR code for Family Day event page' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'QR code for Family Day registration form' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Download event page QR code' })).toHaveAttribute('download', 'family-day-event-qr.png');
+    expect(screen.getByRole('link', { name: 'Download registration form QR code' })).toHaveAttribute('download', 'family-day-registration-qr.png');
     await waitFor(() => expect(mocks.toDataURL).toHaveBeenCalledWith('http://localhost:3000/events/family-day', expect.objectContaining({ width: 1024, errorCorrectionLevel: 'H' })));
+    expect(mocks.toDataURL).toHaveBeenCalledWith('http://localhost:3000/events/family-day/register', expect.objectContaining({ width: 1024, errorCorrectionLevel: 'H' }));
   });
 });

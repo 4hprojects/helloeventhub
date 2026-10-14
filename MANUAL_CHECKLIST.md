@@ -49,7 +49,7 @@ Deploy the repo with HelloDeploy's managed Node.js 22 runtime and record pass/fa
 - [ ] `https://helloeventhub.online/api/v1/health` returns `{"status":"ok","db":"connected"}` (this proves Atlas connectivity).
 - [ ] Redeploy or restart: data is still there and health is OK again.
 - [ ] HelloDeploy health monitoring uses `/api/v1/health`; logs are visible and the managed process restarts after a crash. The Docker `HEALTHCHECK` applies only to fallback image deployments.
-- [ ] Deep links work, e.g. `https://helloeventhub.online/events/alsem-reunion-2026` loads.
+- [ ] Deep links work, e.g. `https://helloeventhub.online/events/mb-wa-reunion-2026` loads.
 - [ ] **If any critical step fails**, decide explicitly whether to use a temporary managed host rather than miss Oct 15. The same Docker image runs anywhere.
 
 ## 3. Accounts and secrets 🔴
@@ -91,7 +91,7 @@ MONGODB_URI='…' SESSION_SECRET='…' npm run create-admin -- --email member@ex
 - [ ] Atlas on-demand snapshot taken.
 - [ ] Staging or production smoke test with **fake** names: register, receive the email, use the manage link, change an RSVP, cancel; admin search, edit and export. Then cancel the fake registrations.
 - [ ] Admin → Settings → **Online registration: Open**.
-- [ ] Share the link: `https://helloeventhub.online/events/alsem-reunion-2026`.
+- [ ] Share the link: `https://helloeventhub.online/events/mb-wa-reunion-2026`.
 - [ ] Watch daily: Dashboard (counts, possible duplicates, failed emails) and Admin → Emails.
 
 ## 7. Before Oct 20 🟠
@@ -118,8 +118,8 @@ MONGODB_URI='…' SESSION_SECRET='…' npm run create-admin -- --email member@ex
 - [ ] Venue laptop data and backups deleted; device token revoked.
 - [ ] Apply the retention policy from the privacy notice when it says so. Take an Atlas snapshot first, then:
   ```bash
-  MONGODB_URI='…atlas…' SESSION_SECRET='…' npm run retention -- --event alsem-reunion-2026 --mode anonymize            # dry run: shows counts
-  MONGODB_URI='…atlas…' SESSION_SECRET='…' npm run retention -- --event alsem-reunion-2026 --mode anonymize --apply --confirm alsem-reunion-2026
+  MONGODB_URI='…atlas…' SESSION_SECRET='…' npm run retention -- --event mb-wa-reunion-2026 --mode anonymize            # dry run: shows counts
+  MONGODB_URI='…atlas…' SESSION_SECRET='…' npm run retention -- --event mb-wa-reunion-2026 --mode anonymize --apply --confirm mb-wa-reunion-2026
   ```
   `anonymize` keeps the counts and snapshots but removes all names, contacts and notes; `delete` removes the registrations entirely. Snapshots are kept either way.
 

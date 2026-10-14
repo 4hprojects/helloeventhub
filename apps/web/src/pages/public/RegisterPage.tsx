@@ -1,6 +1,6 @@
 import { ArrowLeft, ArrowRight, Pencil } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useBeforeUnload, useBlocker, useNavigate, useParams } from 'react-router-dom';
 import { registrationCreateSchema, type PublicEvent, type RegistrationCreatedResponse } from '@heh/contracts';
 import {
   AttendeesSection,
@@ -59,6 +59,7 @@ function Wizard({ event }: { event: PublicEvent }) {
   const [turnstileFailed, setTurnstileFailed] = useState(false);
   const turnstileRef = useRef<TurnstileHandle>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const allowNavigation = useRef(false);
   // One key per form session: retries after network errors replay safely instead of duplicating.
   const idemKey = useRef(newIdempotencyKey());
   const firstRender = useRef(true);
@@ -74,16 +75,31 @@ function Wizard({ event }: { event: PublicEvent }) {
     window.scrollTo({ top: 0 });
   }, [step]);
 
-  // Warn before leaving with unsent data. The form is held in memory only (no localStorage on shared devices).
-  useEffect(() => {
-    const dirty = state.repName || state.attendees.length;
-    if (!dirty) return;
-    const h = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-    };
-    window.addEventListener('beforeunload', h);
-    return () => window.removeEventListener('beforeunload', h);
-  }, [state.repName, state.attendees.length]);
+  const dirty = Boolean(
+    state.repName.trim() ||
+      state.email.trim() ||
+      state.mobile.trim() ||
+      state.messengerDisplayName.trim() ||
+      state.messengerProfileUrl.trim() ||
+      state.eventCategoryId ||
+      state.attendees.length ||
+      state.noneAttending ||
+      state.noAttendeesReason.trim() ||
+      state.notes.trim() ||
+      accepted,
+  );
+  const blocker = useBlocker(({ currentLocation, nextLocation }) =>
+    dirty && !allowNavigation.current && currentLocation.pathname !== nextLocation.pathname,
+  );
+  useBeforeUnload(
+    useCallback(
+      (e) => {
+        if (!dirty || allowNavigation.current) return;
+        e.preventDefault();
+      },
+      [dirty],
+    ),
+  );
 
   const body = () => ({ ...formToBody(state), acceptedPrivacy: accepted, consentVersion: event.consentVersion, turnstileToken: token ?? undefined });
 
@@ -136,6 +152,7 @@ function Wizard({ event }: { event: PublicEvent }) {
         /* storage unavailable: success page falls back to router state */
       }
       idemKey.current = newIdempotencyKey();
+      allowNavigation.current = true;
       setStateRaw(emptyForm());
       navigate('/registration/success', { state: { ...res, hasEmail: !!state.email.trim(), eventSlug: event.slug, eventTitle: event.title } });
     } catch (e) {
@@ -171,14 +188,19 @@ function Wizard({ event }: { event: PublicEvent }) {
         <p className="mt-1 text-sm text-ink-muted" aria-live="polite">
           Step {step + 1} of {STEPS.length}
         </p>
-        <ol className="mt-2 grid grid-cols-4 gap-1" aria-hidden>
-          {STEP_SHORT.map((label, i) => (
-            <li key={label} className="min-w-0">
-              <div className={`h-1.5 rounded-full ${i <= step ? 'bg-brand-strong' : 'bg-line'}`} />
-              <span className={`mt-1 block truncate text-xs ${i === step ? 'font-semibold text-brand-deep' : 'text-ink-muted'}`}>{label}</span>
-            </li>
-          ))}
-        </ol>
+        <nav aria-label="Registration progress">
+          <ol className="mt-2 grid grid-cols-4 gap-1">
+            {STEP_SHORT.map((label, i) => (
+              <li key={label} className="min-w-0" aria-current={i === step ? 'step' : undefined}>
+                <div className={`h-1.5 rounded-full ${i <= step ? 'bg-brand-strong' : 'bg-line'}`} aria-hidden />
+                <span className={`mt-1 block truncate text-xs ${i === step ? 'font-semibold text-brand-deep' : 'text-ink-muted'}`}>
+                  {i === step && <span className="sr-only">Current step: </span>}
+                  {label}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </nav>
       </div>
 
       <ErrorSummary errors={errorList} />
@@ -252,7 +274,43 @@ function Wizard({ event }: { event: PublicEvent }) {
           )}
         </div>
       </form>
+      {blocker.state === 'blocked' && (
+        <LeaveRegistrationDialog onStay={() => blocker.reset()} onLeave={() => blocker.proceed()} />
+      )}
     </div>
+  );
+}
+
+function LeaveRegistrationDialog({ onStay, onLeave }: { onStay: () => void; onLeave: () => void }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return;
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open', '');
+    return () => {
+      if (typeof dialog.close === 'function' && dialog.open) dialog.close();
+    };
+  }, []);
+  return (
+    <dialog
+      ref={ref}
+      aria-labelledby="leave-registration-title"
+      className="m-auto w-[calc(100%_-_2rem)] max-w-md rounded-[var(--radius-card)] bg-white p-0 text-ink shadow-[0_16px_40px_rgba(36,51,72,0.24)] backdrop:bg-ink/40"
+      onCancel={(e) => {
+        e.preventDefault();
+        onStay();
+      }}
+    >
+      <div className="p-5 sm:p-6">
+        <h2 id="leave-registration-title" className="text-xl font-semibold">Leave this registration?</h2>
+        <p className="mt-2">The details you entered have not been submitted and will be lost.</p>
+        <div className="mt-5 flex flex-wrap-reverse justify-end gap-3">
+          <Button type="button" variant="danger" onClick={onLeave}>Leave registration</Button>
+          <Button type="button" onClick={onStay} autoFocus>Keep editing</Button>
+        </div>
+      </div>
+    </dialog>
   );
 }
 

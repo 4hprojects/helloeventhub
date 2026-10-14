@@ -1,4 +1,6 @@
-import { Link, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
+import { usePublicConfig } from '../lib/publicData';
+import { cx } from './ui';
 
 export function SkipLink() {
   return (
@@ -22,23 +24,32 @@ export function Brand({ size = 'md' }: { size?: 'sm' | 'md' }) {
 }
 
 export function PublicLayout() {
+  const { data: config } = usePublicConfig();
+  const eventPath = config ? `/events/${config.primaryEventSlug}` : '/';
+  const navClass = ({ isActive }: { isActive: boolean }) =>
+    cx(
+      'inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium no-underline hover:bg-brand-ice hover:no-underline',
+      isActive ? 'bg-brand-ice text-brand-deep underline decoration-2 underline-offset-4' : 'text-ink',
+    );
   return (
     <div className="flex min-h-dvh flex-col">
       <SkipLink />
       <header className="no-print border-b border-line bg-white">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-3 px-4 py-3 sm:flex-nowrap">
           <Link to="/" aria-label="HelloEventHub home" className="shrink-0 no-underline hover:no-underline">
             <Brand />
           </Link>
-          <nav aria-label="Help" className="flex shrink-0 gap-3 text-sm sm:gap-4 [&_a]:no-underline [&_a:hover]:underline">
-            <Link to="/registration/manage">
+          <nav aria-label="Public" className="order-2 mt-2 flex w-full items-center justify-between gap-1 border-t border-line pt-2 sm:order-none sm:mt-0 sm:w-auto sm:justify-end sm:border-0 sm:pt-0">
+            <NavLink to={eventPath} className={navClass}>
+              Event
+            </NavLink>
+            <NavLink to="/registration/manage" className={navClass}>
               <span className="sm:hidden">My registration</span>
               <span className="hidden sm:inline">Manage registration</span>
-            </Link>
-            {/* Footer already links to Contact; hide here on the narrowest phones to avoid overflow. */}
-            <Link to="/contact" className="hidden min-[360px]:inline">
+            </NavLink>
+            <NavLink to="/contact" className={navClass}>
               Help
-            </Link>
+            </NavLink>
           </nav>
         </div>
       </header>
@@ -46,11 +57,17 @@ export function PublicLayout() {
         <Outlet />
       </main>
       <footer className="no-print border-t border-line bg-white">
-        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-sm text-ink-muted">
-          <p>HelloEventHub · Plan. Register. Connect.</p>
-          <nav aria-label="Legal" className="flex gap-4">
+        <div className="mx-auto grid max-w-3xl gap-4 px-4 py-6 text-sm text-ink-muted sm:grid-cols-[1fr_auto] sm:items-start">
+          <div>
+            <p className="font-semibold text-ink">HelloEventHub · Plan. Register. Connect.</p>
+            <p className="mt-1 max-w-md">A simple way for families to view event details, register a household, and keep attendance up to date.</p>
+          </div>
+          <nav aria-label="Site information" className="flex flex-wrap gap-x-4 gap-y-1 [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center">
+            <Link to="/about">About</Link>
+            <Link to={eventPath}>Event</Link>
+            <Link to="/contact">Help &amp; contact</Link>
             <Link to="/privacy">Privacy</Link>
-            <Link to="/contact">Contact</Link>
+            <Link to="/admin/login">Committee sign in</Link>
           </nav>
         </div>
       </footer>

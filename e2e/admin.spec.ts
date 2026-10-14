@@ -25,10 +25,10 @@ test('admin signs in, sees headcount, finds and opens a registration', async ({ 
   await page.goto('/admin');
   await expect(page).toHaveURL(/\/admin\/login/);
   await page.getByLabel('Email').fill(ADMIN.email);
-  await page.getByLabel('Password').fill('wrong-password-x');
+  await page.getByRole('textbox', { name: 'Password', exact: true }).fill('wrong-password-x');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.getByText('Email or password is incorrect.')).toBeVisible();
-  await page.getByLabel('Password').fill(ADMIN.password);
+  await page.getByRole('textbox', { name: 'Password', exact: true }).fill(ADMIN.password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.getByRole('heading', { name: 'Headcount' })).toBeVisible();
   await expect(page.getByText('Potential (attending + maybe)')).toBeVisible();
@@ -37,9 +37,10 @@ test('admin signs in, sees headcount, finds and opens a registration', async ({ 
   await expect(page.getByText('Checked in', { exact: true })).toBeVisible();
   await expect(page.getByText('Walk-ins', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Share this event' })).toBeVisible();
-  await expect(page.getByRole('img', { name: /QR code for/ })).toBeVisible();
-  const [qr] = await Promise.all([page.waitForEvent('download'), page.getByRole('link', { name: 'Download QR code' }).click()]);
-  expect(qr.suggestedFilename()).toBe(`${SLUG}-qr.png`);
+  await expect(page.getByRole('img', { name: /event page/ })).toBeVisible();
+  await expect(page.getByRole('img', { name: /registration form/ })).toBeVisible();
+  const [qr] = await Promise.all([page.waitForEvent('download'), page.getByRole('link', { name: 'Download registration form QR code' }).click()]);
+  expect(qr.suggestedFilename()).toBe(`${SLUG}-registration-qr.png`);
 
   await page.getByRole('link', { name: 'Registrations', exact: true }).click();
   await page.getByLabel('Search').fill(`lola ${runTag}`);
@@ -56,7 +57,7 @@ test('admin layout has no horizontal overflow on a phone', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 });
   await page.goto('/admin/login');
   await page.getByLabel('Email').fill(ADMIN.email);
-  await page.getByLabel('Password').fill(ADMIN.password);
+  await page.getByRole('textbox', { name: 'Password', exact: true }).fill(ADMIN.password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.getByRole('heading', { name: 'Headcount' })).toBeVisible();
   await expectNoHorizontalOverflow(page);
@@ -65,7 +66,7 @@ test('admin layout has no horizontal overflow on a phone', async ({ page }) => {
 test('event admin downloads exports and captures a snapshot', async ({ page }) => {
   await page.goto('/admin/login');
   await page.getByLabel('Email').fill(ADMIN.email);
-  await page.getByLabel('Password').fill(ADMIN.password);
+  await page.getByRole('textbox', { name: 'Password', exact: true }).fill(ADMIN.password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.getByRole('heading', { name: 'Headcount' })).toBeVisible();
 

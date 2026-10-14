@@ -1,4 +1,4 @@
-// Usage: npm run create-admin -- --email you@example.com --name "Your Name" --role event_admin [--event alsem-reunion-2026]
+// Usage: npm run create-admin -- --email you@example.com --name "Your Name" --role event_admin [--event mb-wa-reunion-2026]
 // Prompts for a password (or reads ADMIN_PASSWORD). Re-running for an existing email adds/updates the membership.
 import { parseArgs } from 'node:util';
 import { createInterface } from 'node:readline/promises';

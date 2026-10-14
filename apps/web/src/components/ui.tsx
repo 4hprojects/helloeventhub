@@ -1,9 +1,10 @@
-import { AlertCircle, AlertTriangle, CheckCircle2, Info, Loader2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle2, Eye, EyeOff, Info, Loader2 } from 'lucide-react';
 import {
   forwardRef,
   useEffect,
   useId,
   useRef,
+  useState,
   type ButtonHTMLAttributes,
   type InputHTMLAttributes,
   type ReactNode,
@@ -84,7 +85,7 @@ function FieldShell({ label, hint, error, required, optional, id, children }: Fi
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-sm font-semibold text-ink">
         {label}
-        {required ? <span className="text-danger"> *</span> : optional ? <span className="font-normal text-ink-muted"> (optional)</span> : null}
+        {required ? <span className="text-danger" aria-hidden="true"> *</span> : optional ? <span className="font-normal text-ink-muted"> (optional)</span> : null}
       </label>
       {hint && (
         <p id={`${id}-hint`} className="text-sm text-ink-muted">
@@ -118,6 +119,36 @@ export function TextField({ label, hint, error, required, optional, id, classNam
   return (
     <FieldShell label={label} hint={hint} error={error} required={required} optional={optional} id={fid}>
       <input id={fid} className={cx(inputCls(error), className)} aria-invalid={!!error || undefined} aria-describedby={describedBy(fid, hint, error)} required={required} {...rest} />
+    </FieldShell>
+  );
+}
+
+export function PasswordField({ label, hint, error, required, id, className, ...rest }: Omit<FieldProps, 'optional'> & Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>) {
+  const auto = useId();
+  const fid = id ?? auto;
+  const [visible, setVisible] = useState(false);
+  return (
+    <FieldShell label={label} hint={hint} error={error} required={required} id={fid}>
+      <div className="relative">
+        <input
+          id={fid}
+          type={visible ? 'text' : 'password'}
+          className={cx(inputCls(error), 'pr-12', className)}
+          aria-invalid={!!error || undefined}
+          aria-describedby={describedBy(fid, hint, error)}
+          required={required}
+          {...rest}
+        />
+        <button
+          type="button"
+          className="absolute inset-y-0 right-0 inline-flex min-h-11 min-w-11 items-center justify-center rounded-r-[10px] text-ink-muted hover:text-brand-deep"
+          aria-label={visible ? 'Hide password' : 'Show password'}
+          aria-pressed={visible}
+          onClick={() => setVisible((shown) => !shown)}
+        >
+          {visible ? <EyeOff className="size-5" aria-hidden /> : <Eye className="size-5" aria-hidden />}
+        </button>
+      </div>
     </FieldShell>
   );
 }
