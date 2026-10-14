@@ -38,6 +38,7 @@ const eventSchema = new Schema(
     organizationId: { type: ObjectId, required: true, ref: 'Organization' },
     slug: { type: String, required: true },
     title: { type: String, required: true },
+    tagline: { type: String, default: '' },
     description: { type: String, default: '' },
     venueName: { type: String },
     venueAddress: { type: String },
@@ -47,6 +48,7 @@ const eventSchema = new Schema(
     onsiteRegistrationStartsAt: { type: Date, required: true },
     timezone: { type: String, required: true, default: 'Asia/Manila' },
     preregSnapshotAt: { type: Date },
+    preregistrationDeadlineDate: { type: String, match: /^\d{4}-\d{2}-\d{2}$/ },
     registrationOpensAt: { type: Date },
     registrationClosesAt: { type: Date },
     selfServiceEditUntil: { type: Date },
@@ -143,7 +145,10 @@ registrationSchema.index({ eventId: 1, representativeNameNormalized: 1 });
 registrationSchema.index({ eventId: 1, 'contacts.emailNormalized': 1 });
 registrationSchema.index({ eventId: 1, 'contacts.mobile': 1 });
 registrationSchema.index({ manageTokenHash: 1 }, { sparse: true });
-registrationSchema.index({ eventId: 1, venueGroupId: 1 }, { unique: true, partialFilterExpression: { venueGroupId: { $type: 'string' } } });
+registrationSchema.index(
+  { eventId: 1, venueGroupId: 1 },
+  { unique: true, partialFilterExpression: { venueGroupId: { $type: 'string' } } },
+);
 
 // ---------------------------------------------------------------- attendees
 const attendeeSchema = new Schema(
@@ -174,7 +179,10 @@ attendeeSchema.index({ eventId: 1, registrationId: 1 });
 attendeeSchema.index({ eventId: 1, normalizedName: 1 });
 attendeeSchema.index({ eventId: 1, status: 1, registrationActive: 1 });
 attendeeSchema.index({ eventId: 1, updatedAt: 1, _id: 1 });
-attendeeSchema.index({ eventId: 1, venueTempId: 1 }, { unique: true, partialFilterExpression: { venueTempId: { $type: 'string' } } });
+attendeeSchema.index(
+  { eventId: 1, venueTempId: 1 },
+  { unique: true, partialFilterExpression: { venueTempId: { $type: 'string' } } },
+);
 
 // ---------------------------------------------------------------- admin_users / memberships
 const adminUserSchema = new Schema(
@@ -297,7 +305,15 @@ const headcountSnapshotSchema = new Schema(
 headcountSnapshotSchema.index({ eventId: 1, idempotencyKey: 1 }, { unique: true });
 headcountSnapshotSchema.index({ eventId: 1, capturedAt: -1 });
 // Append-only: block every update path at the model layer.
-for (const op of ['updateOne', 'updateMany', 'findOneAndUpdate', 'replaceOne', 'deleteOne', 'deleteMany', 'findOneAndDelete'] as const) {
+for (const op of [
+  'updateOne',
+  'updateMany',
+  'findOneAndUpdate',
+  'replaceOne',
+  'deleteOne',
+  'deleteMany',
+  'findOneAndDelete',
+] as const) {
   headcountSnapshotSchema.pre(op, function () {
     throw new Error('headcount_snapshots are append-only');
   });
@@ -388,7 +404,11 @@ const syncOperationSchema = new Schema(
     opId: { type: String, required: true },
     deviceId: { type: String, required: true },
     type: { type: String, required: true },
-    result: { type: String, enum: ['accepted', 'already_applied', 'rejected', 'needs_review'], required: true },
+    result: {
+      type: String,
+      enum: ['accepted', 'already_applied', 'rejected', 'needs_review'],
+      required: true,
+    },
     detail: { type: Schema.Types.Mixed },
   },
   { strict: 'throw', timestamps: true },
@@ -405,7 +425,11 @@ export const AdminUser = mongoose.model('AdminUser', adminUserSchema, 'admin_use
 export const Membership = mongoose.model('Membership', membershipSchema, 'memberships');
 export const EmailJob = mongoose.model('EmailJob', emailJobSchema, 'email_jobs');
 export const AuditLog = mongoose.model('AuditLog', auditLogSchema, 'audit_logs');
-export const HeadcountSnapshot = mongoose.model('HeadcountSnapshot', headcountSnapshotSchema, 'headcount_snapshots');
+export const HeadcountSnapshot = mongoose.model(
+  'HeadcountSnapshot',
+  headcountSnapshotSchema,
+  'headcount_snapshots',
+);
 export const DuplicateFlag = mongoose.model('DuplicateFlag', duplicateFlagSchema, 'duplicate_review_flags');
 export const SubmissionKey = mongoose.model('SubmissionKey', submissionKeySchema, 'submission_keys');
 export const RateLimit = mongoose.model('RateLimit', rateLimitSchema, 'rate_limits');
@@ -440,5 +464,7 @@ export type CategoryDoc = WithId<InferSchemaType<typeof eventCategorySchema>>;
 export type AdminUserDoc = WithId<InferSchemaType<typeof adminUserSchema>>;
 export type MembershipDoc = WithId<InferSchemaType<typeof membershipSchema>>;
 export type EmailJobDoc = WithId<InferSchemaType<typeof emailJobSchema>>;
-export type SnapshotDoc = FlattenMaps<InferSchemaType<typeof headcountSnapshotSchema>> & { _id: Types.ObjectId };
+export type SnapshotDoc = FlattenMaps<InferSchemaType<typeof headcountSnapshotSchema>> & {
+  _id: Types.ObjectId;
+};
 export type DuplicateFlagDoc = WithId<InferSchemaType<typeof duplicateFlagSchema>>;

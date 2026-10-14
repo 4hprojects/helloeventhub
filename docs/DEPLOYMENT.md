@@ -83,6 +83,22 @@ It verifies TLS lifetime, HTTP-to-HTTPS redirect, application/database health, p
 3. Deploy. Check `/api/v1/health` and a test registration on staging/production.
 4. Record version, time, person and result.
 
+### 2026 reunion content migration
+
+The reunion update is deliberately separate from the normal seed so rerunning `npm run seed` cannot duplicate or silently merge branches in an installation that already has registrations. After taking the Atlas snapshot, preview the exact production changes:
+
+```bash
+MONGODB_URI='mongodb+srv://…' SESSION_SECRET='…' npm run migrate:reunion-2026
+```
+
+The dry run reports event, registration, attendee, branch-merge and reference-remap counts without writing. Apply only after those counts are recorded and reviewed:
+
+```bash
+MONGODB_URI='mongodb+srv://…' SESSION_SECRET='…' npm run migrate:reunion-2026 -- --apply --confirm mb-wa-reunion-2026
+```
+
+The operation targets the existing slug, refuses to create a missing event, runs reference remaps and branch merging in a transaction, and verifies that registration and attendee totals do not change. It is safe to rerun.
+
 ## 5. Rollback
 
 Redeploy the previous image/commit. Schema changes so far are additive (new optional fields and indexes), so older releases run against newer data. Never run destructive migrations without a fresh snapshot.

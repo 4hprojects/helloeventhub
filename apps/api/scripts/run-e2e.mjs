@@ -12,7 +12,9 @@ const venueBuild = path.join(root, 'apps/venue/dist/server.js');
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
 if (!existsSync(apiBuild) || !existsSync(webBuild) || !existsSync(venueBuild)) {
-  throw new Error('Production builds not found. Run `npm run build` before the self-contained release suite.');
+  throw new Error(
+    'Production builds not found. Run `npm run build` before the self-contained release suite.',
+  );
 }
 
 const port = process.env.E2E_PORT ?? '3210';
@@ -102,7 +104,7 @@ try {
   ]);
   server = spawn(process.execPath, [apiBuild], { cwd: root, env, stdio: 'inherit' });
   await waitForServer(server);
-  await run(npm, ['run', 'test:e2e']);
+  await run(npm, ['run', 'test:e2e', '--', ...process.argv.slice(2)]);
   await run(process.execPath, ['scripts/venue-simulation.mjs']);
 } finally {
   await stopServer(server);

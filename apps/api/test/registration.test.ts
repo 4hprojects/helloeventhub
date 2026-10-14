@@ -16,13 +16,16 @@ beforeEach(async () => {
 describe('GET /events/:slug', () => {
   it('returns public details and categories without private data', async () => {
     const res = await request(ctx.app).get(`/api/v1/events/${ctx.eventSlug}`).expect(200);
-    expect(res.body.title).toBe('1st Menay Bugtong–Wakat Alsem Clan Reunion 2026');
+    expect(res.body.title).toBe('1st Menay Bugtong - Wakat Alsem Clan Reunion');
+    expect(res.body.tagline).toBe('One Family, Many Faces, New Connections');
+    expect(res.body.preregistrationDeadlineDate).toBe('2026-10-20');
     expect(res.body.registrationOpen).toBe(true);
     expect(res.body.contactInfo.phone).toBe('09618085084');
     expect(res.body.privacyNoticeApproved).toBe(true);
     expect(res.body.privacyNotice).not.toMatch(/PENDING|TO CONFIRM|PLACEHOLDER/i);
-    expect(res.body.venueName).toBeNull();
-    expect(res.body.categories).toHaveLength(10);
+    expect(res.body.venueName).toBe('Veterans Building');
+    expect(res.body.venueMapUrl).toBe('https://maps.app.goo.gl/6NLwRQT4iLkmXosD6');
+    expect(res.body.categories).toHaveLength(9);
     expect(Object.keys(res.body)).not.toEqual(expect.arrayContaining(['registrations']));
     expect(Object.keys(res.body)).not.toEqual(expect.arrayContaining(['attendees']));
   });
@@ -42,11 +45,18 @@ describe('POST /events/:id/registrations', () => {
     expect(reg?.contacts?.emailNormalized).toBe('rep@example.test');
     expect(reg?.consent?.version).toBe('2026-10-v2');
     expect(await Attendee.countDocuments({ registrationId: reg!._id })).toBe(2);
-    expect(await EmailJob.countDocuments({ registrationId: reg!._id, type: 'registration_confirmation' })).toBe(1);
+    expect(
+      await EmailJob.countDocuments({ registrationId: reg!._id, type: 'registration_confirmation' }),
+    ).toBe(1);
   });
 
   it('does not count the representative unless listed as an attendee', async () => {
-    const res = await submit(ctx, registrationPayload({ attendees: [{ fullName: 'Someone Else', ageCategory: 'adult', rsvp: 'confirmed' }] })).expect(201);
+    const res = await submit(
+      ctx,
+      registrationPayload({
+        attendees: [{ fullName: 'Someone Else', ageCategory: 'adult', rsvp: 'confirmed' }],
+      }),
+    ).expect(201);
     expect(res.body.countSummary.total).toBe(1);
     const reg = await Registration.findOne({ reference: res.body.reference }).lean();
     const names = (await Attendee.find({ registrationId: reg!._id }).lean()).map((a) => a.fullName);
@@ -55,7 +65,9 @@ describe('POST /events/:id/registrations', () => {
 
   it('replays the same result for a retried idempotency key and never duplicates', async () => {
     const key = uid();
-    const body = registrationPayload({ representative: { name: 'Retry Person', contacts: { mobile: '0917 555 1234', preferred: 'mobile' } } });
+    const body = registrationPayload({
+      representative: { name: 'Retry Person', contacts: { mobile: '0917 555 1234', preferred: 'mobile' } },
+    });
     const first = await submit(ctx, body, key).expect(201);
     const second = await submit(ctx, { ...body, turnstileToken: 'a-new-token' }, key).expect(201);
     expect(second.headers['idempotent-replayed']).toBe('true');
@@ -65,7 +77,9 @@ describe('POST /events/:id/registrations', () => {
 
   it('handles concurrent double-submit with the same key', async () => {
     const key = uid();
-    const body = registrationPayload({ representative: { name: 'Double Click', contacts: { email: 'dc@example.test', preferred: 'email' } } });
+    const body = registrationPayload({
+      representative: { name: 'Double Click', contacts: { email: 'dc@example.test', preferred: 'email' } },
+    });
     const [a, b] = await Promise.all([submit(ctx, body, key), submit(ctx, body, key)]);
     expect([a.status, b.status].sort()).toEqual([201, 201]);
     expect(a.body.reference).toBe(b.body.reference);
@@ -80,33 +94,63 @@ describe('POST /events/:id/registrations', () => {
   });
 
   it('requires an Idempotency-Key header', async () => {
-    const res = await request(ctx.app).post(`/api/v1/events/${ctx.eventId}/registrations`).send(registrationPayload()).expect(400);
+    const res = await request(ctx.app)
+      .post(`/api/v1/events/${ctx.eventId}/registrations`)
+      .send(registrationPayload())
+      .expect(400);
     expect(res.body.error.code).toBe('idempotency_key_required');
   });
 
   it('validates contacts, attendee limits and privacy with field errors', async () => {
-    const noContact = await submit(ctx, registrationPayload({ representative: { name: 'No Contact', contacts: { preferred: 'email' } } })).expect(422);
-    expect(noContact.body.error.fieldErrors['representative.contacts']).toEqual(['Provide at least one way to contact you: email, mobile or Messenger']);
-    const badPhone = await submit(ctx, registrationPayload({ representative: { name: 'Bad Phone', contacts: { mobile: '12345', preferred: 'mobile' } } })).expect(422);
+    const noContact = await submit(
+      ctx,
+      registrationPayload({ representative: { name: 'No Contact', contacts: { preferred: 'email' } } }),
+    ).expect(422);
+    expect(noContact.body.error.fieldErrors['representative.contacts']).toEqual([
+      'Provide at least one way to contact you: email, mobile or Messenger',
+    ]);
+    const badPhone = await submit(
+      ctx,
+      registrationPayload({
+        representative: { name: 'Bad Phone', contacts: { mobile: '12345', preferred: 'mobile' } },
+      }),
+    ).expect(422);
     expect(badPhone.body.error.fieldErrors['representative.contacts.mobile']).toBeDefined();
-    const many = Array.from({ length: 21 }, (_, i) => ({ fullName: `Person ${i} Test`, ageCategory: 'adult', rsvp: 'confirmed' }));
+    const many = Array.from({ length: 21 }, (_, i) => ({
+      fullName: `Person ${i} Test`,
+      ageCategory: 'adult',
+      rsvp: 'confirmed',
+    }));
     await submit(ctx, registrationPayload({ attendees: many })).expect(422);
     await submit(ctx, registrationPayload({ acceptedPrivacy: false })).expect(422);
     await submit(ctx, registrationPayload({ attendees: [] })).expect(422);
   });
 
   it('accepts 20 attendees and a messenger-only contact', async () => {
-    const many = Array.from({ length: 20 }, (_, i) => ({ fullName: `Big Family ${i} Member`, ageCategory: i % 3 ? 'adult' : 'child', rsvp: 'confirmed' }));
+    const many = Array.from({ length: 20 }, (_, i) => ({
+      fullName: `Big Family ${i} Member`,
+      ageCategory: i % 3 ? 'adult' : 'child',
+      rsvp: 'confirmed',
+    }));
     const res = await submit(
       ctx,
-      registrationPayload({ attendees: many, representative: { name: 'Messenger Only', contacts: { messengerDisplayName: 'Msgr Name', preferred: 'messenger' } } }),
+      registrationPayload({
+        attendees: many,
+        representative: {
+          name: 'Messenger Only',
+          contacts: { messengerDisplayName: 'Msgr Name', preferred: 'messenger' },
+        },
+      }),
     ).expect(201);
     expect(res.body.countSummary.total).toBe(20);
     expect(res.body.confirmationEmailQueued).toBe(false);
   });
 
   it('allows zero attendees with an explicit reason', async () => {
-    const res = await submit(ctx, registrationPayload({ attendees: [], noAttendeesReason: 'Working abroad this year' })).expect(201);
+    const res = await submit(
+      ctx,
+      registrationPayload({ attendees: [], noAttendeesReason: 'Working abroad this year' }),
+    ).expect(201);
     expect(res.body.countSummary.total).toBe(0);
   });
 
@@ -145,7 +189,11 @@ describe('POST /events/:id/registrations', () => {
   });
 
   it('enforces capacity when configured', async () => {
-    const current = await Attendee.countDocuments({ status: 'active', registrationActive: true, rsvp: { $in: ['confirmed', 'tentative'] } });
+    const current = await Attendee.countDocuments({
+      status: 'active',
+      registrationActive: true,
+      rsvp: { $in: ['confirmed', 'tentative'] },
+    });
     await Event.updateOne({ slug: ctx.eventSlug }, { $set: { capacity: current + 1 } });
     const res = await submit(ctx, registrationPayload()).expect(422);
     expect(res.body.error.code).toBe('capacity_reached');
@@ -153,8 +201,12 @@ describe('POST /events/:id/registrations', () => {
   });
 
   it('flags possible duplicate names without merging', async () => {
-    const one = registrationPayload({ attendees: [{ fullName: 'José Dupli Cate', ageCategory: 'adult', rsvp: 'confirmed' }] });
-    const two = registrationPayload({ attendees: [{ fullName: 'jose dupli-cate', ageCategory: 'adult', rsvp: 'confirmed' }] });
+    const one = registrationPayload({
+      attendees: [{ fullName: 'José Dupli Cate', ageCategory: 'adult', rsvp: 'confirmed' }],
+    });
+    const two = registrationPayload({
+      attendees: [{ fullName: 'jose dupli-cate', ageCategory: 'adult', rsvp: 'confirmed' }],
+    });
     await submit(ctx, one).expect(201);
     await submit(ctx, two).expect(201);
     await new Promise((r) => setTimeout(r, 200));
@@ -167,11 +219,21 @@ describe('POST /events/:id/registrations', () => {
   it('rejects oversized and malformed bodies', async () => {
     const huge = registrationPayload({ notes: 'x'.repeat(70_000) });
     await submit(ctx, huge).expect(413);
-    await request(ctx.app).post(`/api/v1/events/${ctx.eventId}/registrations`).set('Idempotency-Key', uid()).set('Content-Type', 'application/json').send('{bad').expect(400);
+    await request(ctx.app)
+      .post(`/api/v1/events/${ctx.eventId}/registrations`)
+      .set('Idempotency-Key', uid())
+      .set('Content-Type', 'application/json')
+      .send('{bad')
+      .expect(400);
   });
 
   it('ignores NoSQL operator injection in fields', async () => {
-    const res = await submit(ctx, registrationPayload({ representative: { name: { $gt: '' }, contacts: { email: 'x@example.test', preferred: 'email' } } })).expect(422);
+    const res = await submit(
+      ctx,
+      registrationPayload({
+        representative: { name: { $gt: '' }, contacts: { email: 'x@example.test', preferred: 'email' } },
+      }),
+    ).expect(422);
     expect(res.body.error.code).toBe('validation_failed');
   });
 });

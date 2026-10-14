@@ -36,6 +36,7 @@ export interface PublicEvent {
   id: string;
   slug: string;
   title: string;
+  tagline: string;
   description: string;
   venueName: string | null;
   venueAddress: string | null;
@@ -44,6 +45,7 @@ export interface PublicEvent {
   endsAt: string;
   onsiteRegistrationStartsAt: string;
   timezone: string;
+  preregistrationDeadlineDate: string | null;
   registrationOpen: boolean;
   registrationMessage: string | null;
   lateRegistration: boolean;
@@ -105,7 +107,8 @@ export interface OwnerRegistrationDto {
   event: { slug: string; title: string; startsAt: string; timezone: string; categories: PublicCategory[] };
 }
 
-export interface AdminRegistrationDto extends Omit<OwnerRegistrationDto, 'canEdit' | 'editDeadline' | 'event'> {
+export interface AdminRegistrationDto
+  extends Omit<OwnerRegistrationDto, 'canEdit' | 'editDeadline' | 'event'> {
   source: RegistrationSource;
   lateRegistration: boolean;
   botCheck: string;
@@ -169,7 +172,13 @@ export interface DashboardDto extends HeadcountTotals {
   walkIns: number;
   /** Most recent sync from any active venue device, or null if none has synced. */
   venueLastSyncAt: string | null;
-  recent: Array<{ id: string; reference: string; representativeName: string; attendeeCount: number; createdAt: string }>;
+  recent: Array<{
+    id: string;
+    reference: string;
+    representativeName: string;
+    attendeeCount: number;
+    createdAt: string;
+  }>;
   asOf: string;
   timezone: string;
 }
@@ -200,6 +209,7 @@ export interface AdminEventDto {
   slug: string;
   revision: number;
   title: string;
+  tagline: string;
   description: string;
   venueName: string | null;
   venueAddress: string | null;
@@ -212,6 +222,7 @@ export interface AdminEventDto {
   registrationClosesAt: string | null;
   selfServiceEditUntil: string | null;
   preregSnapshotAt: string | null;
+  preregistrationDeadlineDate: string | null;
   allowLateRegistration: boolean;
   capacity: number | null;
   contactInfo: { email?: string; phone?: string; messenger?: string; note?: string };

@@ -31,6 +31,7 @@ describe('rate limits behind Cloudflare', () => {
         NODE_ENV: 'production',
         isProd: true,
         APP_BASE_URL: 'https://helloeventhub.online',
+        CLOUDFLARE: true,
       },
     });
   });
@@ -60,9 +61,19 @@ describe('rate limits behind Cloudflare', () => {
 
   it('without the Cloudflare flag the header is ignored', async () => {
     for (let i = 0; i < 10; i++) {
-      await request(ctx.app).post('/api/v1/registrations/access/request').set('X-Forwarded-For', '172.64.1.1').set('CF-Connecting-IP', `203.0.113.${i}`).send({ eventSlug: ctx.eventSlug, email: `w${i}@example.test`, reference: 'HEH-00000000' }).expect(202);
+      await request(ctx.app)
+        .post('/api/v1/registrations/access/request')
+        .set('X-Forwarded-For', '172.64.1.1')
+        .set('CF-Connecting-IP', `203.0.113.${i}`)
+        .send({ eventSlug: ctx.eventSlug, email: `w${i}@example.test`, reference: 'HEH-00000000' })
+        .expect(202);
     }
-    await request(ctx.app).post('/api/v1/registrations/access/request').set('X-Forwarded-For', '172.64.1.1').set('CF-Connecting-IP', '203.0.113.200').send({ eventSlug: ctx.eventSlug, email: 'x@example.test', reference: 'HEH-00000000' }).expect(429);
+    await request(ctx.app)
+      .post('/api/v1/registrations/access/request')
+      .set('X-Forwarded-For', '172.64.1.1')
+      .set('CF-Connecting-IP', '203.0.113.200')
+      .send({ eventSlug: ctx.eventSlug, email: 'x@example.test', reference: 'HEH-00000000' })
+      .expect(429);
   });
 
   it('redirects public production HTTP traffic to HTTPS without breaking the internal health probe', async () => {
@@ -73,5 +84,18 @@ describe('rate limits behind Cloudflare', () => {
       .get(`/api/v1/events/${ctx.eventSlug}`)
       .set('X-Forwarded-Proto', 'https')
       .expect(200);
+  });
+
+  it('recognizes HTTPS reported by a verified Cloudflare edge without trusting a spoofed direct header', async () => {
+    await request(productionApp)
+      .get(`/api/v1/events/${ctx.eventSlug}`)
+      .set('X-Forwarded-For', '172.64.1.1')
+      .set('CF-Visitor', JSON.stringify({ scheme: 'https' }))
+      .expect(200);
+    await request(productionApp)
+      .get(`/events/${ctx.eventSlug}`)
+      .set('X-Forwarded-For', '8.8.8.8')
+      .set('CF-Visitor', JSON.stringify({ scheme: 'https' }))
+      .expect(308);
   });
 });

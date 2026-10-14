@@ -5,30 +5,14 @@ export const PRIMARY_EVENT_SLUG = 'mb-wa-reunion-2026';
 const LEGACY_PRIMARY_EVENT_SLUG = 'alsem-reunion-2026';
 
 export const FAMILY_BRANCHES = [
-  '1a. Albin – Baon Tinay',
-  '1b. Albin – Magastino',
-  '2. Magdalena – Palaez Mat-an',
-  '3. Mary – Francisco Marino',
-  '4. Toribio – Virginia Villanueva',
-  '5. Ganzon – Pilar Licdan',
-  '6. Onofre – Belen Wagsi',
-  '7. Mistihil – Zenaida Calado',
-  '8. Denio – Pacita Guzman',
-  'Other/Unsure',
-];
-
-// Existing installations started with these shorter labels. Seed upgrades rename
-// the same records so registrations keep their category references and history.
-const LEGACY_FAMILY_BRANCHES = [
-  'Albina',
-  '2b. Albin – Magastino',
-  'Magdalena',
-  'Mary',
-  'Toribio',
-  'Ganzon',
-  'Onofre',
-  'Mistihil',
-  'Denio',
+  '1. Albina — Baon Tinay / Magastino',
+  '2. Magdalena — Palag Mat-an',
+  '3. Mary — Francisco Marino',
+  '4. Toribio — Virginia Villanueva',
+  '5. Ganzon — Pilar Licdan',
+  '6. Onofre — Belen Wagsi',
+  '7. Mistihil — Zenaida Calado',
+  '8. Denio — Pacita Guzman',
   'Other/Unsure',
 ];
 
@@ -67,16 +51,20 @@ export async function seedPrimaryEvent() {
       organizationId: org._id,
       slug: PRIMARY_EVENT_SLUG,
       // Approved first-event title.
-      title: '1st Menay Bugtong–Wakat Alsem Clan Reunion 2026',
+      title: '1st Menay Bugtong - Wakat Alsem Clan Reunion',
+      tagline: 'One Family, Many Faces, New Connections',
       description:
-        'Join the 1st Menay Bugtong–Wakat Alsem Clan Reunion 2026 for a day of family, stories and connection. Please register your household so the organizers can plan food, seating and event materials.',
-      // Intentionally unset: the approved public status is "Venue to be announced".
+        "You're invited to our first clan reunion! Come meet relatives, discover family connections, and celebrate our shared heritage. Let's build new relationships and make memories together.",
+      venueName: 'Veterans Building',
+      venueAddress: 'Puguis, La Trinidad, Benguet',
+      venueMapUrl: 'https://maps.app.goo.gl/6NLwRQT4iLkmXosD6',
       startsAt: new Date('2026-10-24T09:00:00+08:00'),
       endsAt: new Date('2026-10-24T15:00:00+08:00'),
       onsiteRegistrationStartsAt: new Date('2026-10-24T08:00:00+08:00'),
       timezone: 'Asia/Manila',
       // Approved planning cutoff: October 20 at 23:59 Asia/Manila.
       preregSnapshotAt: new Date('2026-10-20T23:59:00+08:00'),
+      preregistrationDeadlineDate: '2026-10-20',
       registrationClosesAt: null,
       selfServiceEditUntil: new Date('2026-10-24T09:00:00+08:00'),
       allowLateRegistration: true,
@@ -90,20 +78,12 @@ export async function seedPrimaryEvent() {
     });
   }
   let createdCategories = 0;
+  // Existing installations are upgraded only by the guarded event migration;
+  // a routine seed must never create duplicate branches beside legacy records.
+  if (!createdEvent) return { org, event, createdEvent, createdCategories };
   for (const [i, label] of FAMILY_BRANCHES.entries()) {
     const labelNormalized = normalizeName(label);
-    let existing = await EventCategory.findOne({ eventId: event._id, labelNormalized });
-    const legacyLabel = LEGACY_FAMILY_BRANCHES[i];
-    if (!existing && legacyLabel) {
-      existing = await EventCategory.findOne({ eventId: event._id, labelNormalized: normalizeName(legacyLabel) });
-      if (existing) {
-        existing.label = label;
-        existing.labelNormalized = labelNormalized;
-        existing.sortOrder = i * 10;
-        existing.provisional = false;
-        await existing.save();
-      }
-    }
+    const existing = await EventCategory.findOne({ eventId: event._id, labelNormalized });
     if (!existing) {
       await EventCategory.create({
         organizationId: org._id,

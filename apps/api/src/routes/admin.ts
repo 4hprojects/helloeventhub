@@ -57,7 +57,10 @@ export function ev(req: Request): EventDoc {
 }
 
 export async function loadRegistration(req: Request) {
-  const reg = await Registration.findOne({ eventId: ev(req)._id, publicId: req.params.registrationId }).lean();
+  const reg = await Registration.findOne({
+    eventId: ev(req)._id,
+    publicId: req.params.registrationId,
+  }).lean();
   if (!reg) throw notFound('Registration');
   return reg;
 }
@@ -70,6 +73,7 @@ async function adminEventDto(event: EventDoc, role: AdminEventDto['role']): Prom
     slug: event.slug,
     revision: event.revision,
     title: event.title,
+    tagline: event.tagline ?? '',
     description: event.description ?? '',
     venueName: event.venueName ?? null,
     venueAddress: event.venueAddress ?? null,
@@ -82,6 +86,7 @@ async function adminEventDto(event: EventDoc, role: AdminEventDto['role']): Prom
     registrationClosesAt: iso(event.registrationClosesAt),
     selfServiceEditUntil: iso(event.selfServiceEditUntil),
     preregSnapshotAt: iso(event.preregSnapshotAt),
+    preregistrationDeadlineDate: event.preregistrationDeadlineDate ?? null,
     allowLateRegistration: event.allowLateRegistration,
     capacity: event.capacity ?? null,
     contactInfo: {
@@ -95,7 +100,13 @@ async function adminEventDto(event: EventDoc, role: AdminEventDto['role']): Prom
     privacyNoticeApproved: !!event.privacyNoticeApproved,
     consentVersion: event.consentVersion,
     role,
-    categories: categories.map((c) => ({ id: c.publicId, label: c.label, sortOrder: c.sortOrder, active: c.active, provisional: c.provisional })),
+    categories: categories.map((c) => ({
+      id: c.publicId,
+      label: c.label,
+      sortOrder: c.sortOrder,
+      active: c.active,
+      provisional: c.provisional,
+    })),
   };
 }
 
@@ -109,24 +120,44 @@ export function adminRoutes(deps: AppDeps): Router {
   r.get(
     '/events',
     ah(async (req, res) => {
-      const memberships = await Membership.find({ userId: req.admin!.userId, role: { $in: ['committee', 'event_admin'] } }).lean();
+      const memberships = await Membership.find({
+        userId: req.admin!.userId,
+        role: { $in: ['committee', 'event_admin'] },
+      }).lean();
       const orgWide = memberships.filter((m) => !m.eventId).map((m) => m.organizationId);
       const direct = memberships.filter((m) => m.eventId).map((m) => m.eventId!);
-      const events = await Event.find({ $or: [{ _id: { $in: direct } }, { organizationId: { $in: orgWide } }], status: { $ne: 'archived' } })
+      const events = await Event.find({
+        $or: [{ _id: { $in: direct } }, { organizationId: { $in: orgWide } }],
+        status: { $ne: 'archived' },
+      })
         .sort({ startsAt: 1 })
         .lean();
       const roleFor = (e: EventDoc) =>
         memberships
-          .filter((m) => String(m.organizationId) === String(e.organizationId) && (!m.eventId || String(m.eventId) === String(e._id)))
+          .filter(
+            (m) =>
+              String(m.organizationId) === String(e.organizationId) &&
+              (!m.eventId || String(m.eventId) === String(e._id)),
+          )
           .some((m) => m.role === 'event_admin')
           ? 'event_admin'
           : 'committee';
-      const items: AdminEventSummary[] = events.map((e) => ({ id: e.publicId, slug: e.slug, title: e.title, startsAt: e.startsAt.toISOString(), role: roleFor(e) }));
+      const items: AdminEventSummary[] = events.map((e) => ({
+        id: e.publicId,
+        slug: e.slug,
+        title: e.title,
+        startsAt: e.startsAt.toISOString(),
+        role: roleFor(e),
+      }));
       res.json({ items });
     }),
   );
 
-  r.get('/events/:eventId', committee, ah(async (req, res) => res.json(await adminEventDto(ev(req), req.eventAccess!.role))));
+  r.get(
+    '/events/:eventId',
+    committee,
+    ah(async (req, res) => res.json(await adminEventDto(ev(req), req.eventAccess!.role))),
+  );
 
   r.patch(
     '/events/:eventId',
@@ -136,14 +167,28 @@ export function adminRoutes(deps: AppDeps): Router {
       const d = (s?: string | null) => (s ? new Date(s) : null);
       const startsAt = new Date(body.startsAt);
       const endsAt = new Date(body.endsAt);
-      if (endsAt <= startsAt) throw new HttpError(422, 'validation_failed', 'End time must be after start time.', { endsAt: ['Must be after start'] });
+      if (endsAt <= startsAt)
+        throw new HttpError(422, 'validation_failed', 'End time must be after start time.', {
+          endsAt: ['Must be after start'],
+        });
       if (body.registrationStatus === 'open') {
         const fieldErrors: Record<string, string[]> = {};
-        const hasPublicContact = Boolean(body.contactInfo.email || body.contactInfo.phone || body.contactInfo.messenger);
-        if (!hasPublicContact) fieldErrors['contactInfo.email'] = ['Add an organizer email, phone or Messenger contact before opening registration'];
-        if (!body.privacyNoticeApproved) fieldErrors.privacyNoticeApproved = ['Approve the privacy notice before opening registration'];
+        const hasPublicContact = Boolean(
+          body.contactInfo.email || body.contactInfo.phone || body.contactInfo.messenger,
+        );
+        if (!hasPublicContact)
+          fieldErrors['contactInfo.email'] = [
+            'Add an organizer email, phone or Messenger contact before opening registration',
+          ];
+        if (!body.privacyNoticeApproved)
+          fieldErrors.privacyNoticeApproved = ['Approve the privacy notice before opening registration'];
         if (Object.keys(fieldErrors).length) {
-          throw new HttpError(422, 'validation_failed', 'Complete the public contact and privacy requirements before opening registration.', fieldErrors);
+          throw new HttpError(
+            422,
+            'validation_failed',
+            'Complete the public contact and privacy requirements before opening registration.',
+            fieldErrors,
+          );
         }
       }
       const updated = await Event.findOneAndUpdate(
@@ -151,6 +196,7 @@ export function adminRoutes(deps: AppDeps): Router {
         {
           $set: {
             title: body.title,
+            tagline: body.tagline,
             description: body.description,
             venueName: body.venueName ?? null,
             venueAddress: body.venueAddress ?? null,
@@ -162,6 +208,7 @@ export function adminRoutes(deps: AppDeps): Router {
             registrationClosesAt: d(body.registrationClosesAt),
             selfServiceEditUntil: d(body.selfServiceEditUntil),
             preregSnapshotAt: d(body.preregSnapshotAt),
+            preregistrationDeadlineDate: body.preregistrationDeadlineDate ?? null,
             allowLateRegistration: body.allowLateRegistration,
             capacity: body.capacity ?? null,
             contactInfo: body.contactInfo,
@@ -175,7 +222,16 @@ export function adminRoutes(deps: AppDeps): Router {
         { new: true },
       ).lean();
       if (!updated) throw revisionConflict();
-      await audit({ organizationId: updated.organizationId, eventId: updated._id, actor: actorOf(req), action: 'event.updated', subjectType: 'event', subjectId: updated.publicId, metadata: { revision: updated.revision }, requestId: req.requestId });
+      await audit({
+        organizationId: updated.organizationId,
+        eventId: updated._id,
+        actor: actorOf(req),
+        action: 'event.updated',
+        subjectType: 'event',
+        subjectId: updated.publicId,
+        metadata: { revision: updated.revision },
+        requestId: req.requestId,
+      });
       res.json(await adminEventDto(updated, req.eventAccess!.role));
     }),
   );
@@ -190,14 +246,32 @@ export function adminRoutes(deps: AppDeps): Router {
       const count = await EventCategory.countDocuments({ eventId: event._id });
       try {
         const [cat] = await EventCategory.create([
-          { organizationId: event.organizationId, eventId: event._id, label: body.label, labelNormalized: normalizeName(body.label), sortOrder: body.sortOrder ?? count * 10, provisional: false },
+          {
+            organizationId: event.organizationId,
+            eventId: event._id,
+            label: body.label,
+            labelNormalized: normalizeName(body.label),
+            sortOrder: body.sortOrder ?? count * 10,
+            provisional: false,
+          },
         ]);
-        await audit({ organizationId: event.organizationId, eventId: event._id, actor: actorOf(req), action: 'category.created', subjectType: 'category', subjectId: cat!.publicId, requestId: req.requestId });
+        await audit({
+          organizationId: event.organizationId,
+          eventId: event._id,
+          actor: actorOf(req),
+          action: 'category.created',
+          subjectType: 'category',
+          subjectId: cat!.publicId,
+          requestId: req.requestId,
+        });
       } catch (err) {
-        if ((err as { code?: number }).code === 11000) throw new HttpError(409, 'duplicate_label', 'A branch with that name already exists.');
+        if ((err as { code?: number }).code === 11000)
+          throw new HttpError(409, 'duplicate_label', 'A branch with that name already exists.');
         throw err;
       }
-      res.status(201).json(await adminEventDto((await Event.findById(event._id).lean())!, req.eventAccess!.role));
+      res
+        .status(201)
+        .json(await adminEventDto((await Event.findById(event._id).lean())!, req.eventAccess!.role));
     }),
   );
 
@@ -208,15 +282,34 @@ export function adminRoutes(deps: AppDeps): Router {
       const body = parse(categoryUpdateSchema, req.body);
       const event = ev(req);
       const set: Record<string, unknown> = {};
-      if (body.label !== undefined) Object.assign(set, { label: body.label, labelNormalized: normalizeName(body.label), provisional: false });
+      if (body.label !== undefined)
+        Object.assign(set, {
+          label: body.label,
+          labelNormalized: normalizeName(body.label),
+          provisional: false,
+        });
       if (body.sortOrder !== undefined) set.sortOrder = body.sortOrder;
       if (body.active !== undefined) set.active = body.active;
       try {
-        const cat = await EventCategory.findOneAndUpdate({ eventId: event._id, publicId: req.params.categoryId }, { $set: set }, { new: true }).lean();
+        const cat = await EventCategory.findOneAndUpdate(
+          { eventId: event._id, publicId: req.params.categoryId },
+          { $set: set },
+          { new: true },
+        ).lean();
         if (!cat) throw notFound('Branch');
-        await audit({ organizationId: event.organizationId, eventId: event._id, actor: actorOf(req), action: 'category.updated', subjectType: 'category', subjectId: cat.publicId, metadata: { fields: Object.keys(set) }, requestId: req.requestId });
+        await audit({
+          organizationId: event.organizationId,
+          eventId: event._id,
+          actor: actorOf(req),
+          action: 'category.updated',
+          subjectType: 'category',
+          subjectId: cat.publicId,
+          metadata: { fields: Object.keys(set) },
+          requestId: req.requestId,
+        });
       } catch (err) {
-        if ((err as { code?: number }).code === 11000) throw new HttpError(409, 'duplicate_label', 'A branch with that name already exists.');
+        if ((err as { code?: number }).code === 11000)
+          throw new HttpError(409, 'duplicate_label', 'A branch with that name already exists.');
         throw err;
       }
       res.json(await adminEventDto(event, req.eventAccess!.role));
@@ -229,15 +322,36 @@ export function adminRoutes(deps: AppDeps): Router {
     committee,
     ah(async (req, res) => {
       const event = ev(req);
-      const [{ totals, byCategory }, lateRegistrations, openDuplicateFlags, failedEmails, checkedIn, recent, walkIns, lastDevice] = await Promise.all([
+      const [
+        { totals, byCategory },
+        lateRegistrations,
+        openDuplicateFlags,
+        failedEmails,
+        checkedIn,
+        recent,
+        walkIns,
+        lastDevice,
+      ] = await Promise.all([
         computeHeadcount(event._id),
         Registration.countDocuments({ eventId: event._id, status: 'active', lateRegistration: true }),
         DuplicateFlag.countDocuments({ eventId: event._id, status: 'open' }),
         EmailJob.countDocuments({ eventId: event._id, status: 'failed' }),
         Checkin.countDocuments({ eventId: event._id }),
-        Registration.find({ eventId: event._id, status: 'active' }).sort({ createdAt: -1 }).limit(8).select('publicId reference representativeName createdAt').lean(),
-        Attendee.countDocuments({ eventId: event._id, status: 'active', registrationActive: true, walkIn: true }),
-        VenueDevice.findOne({ eventId: event._id, status: 'active', lastSeenAt: { $ne: null } }).sort({ lastSeenAt: -1 }).select('lastSeenAt').lean(),
+        Registration.find({ eventId: event._id, status: 'active' })
+          .sort({ createdAt: -1 })
+          .limit(8)
+          .select('publicId reference representativeName createdAt')
+          .lean(),
+        Attendee.countDocuments({
+          eventId: event._id,
+          status: 'active',
+          registrationActive: true,
+          walkIn: true,
+        }),
+        VenueDevice.findOne({ eventId: event._id, status: 'active', lastSeenAt: { $ne: null } })
+          .sort({ lastSeenAt: -1 })
+          .select('lastSeenAt')
+          .lean(),
       ]);
       const counts = await Attendee.aggregate<{ _id: Types.ObjectId; n: number }>([
         { $match: { registrationId: { $in: recent.map((x) => x._id) }, status: 'active' } },
@@ -253,7 +367,13 @@ export function adminRoutes(deps: AppDeps): Router {
         checkedIn,
         walkIns,
         venueLastSyncAt: lastDevice?.lastSeenAt?.toISOString() ?? null,
-        recent: recent.map((x) => ({ id: x.publicId, reference: x.reference, representativeName: x.representativeName, attendeeCount: countMap.get(String(x._id)) ?? 0, createdAt: x.createdAt.toISOString() })),
+        recent: recent.map((x) => ({
+          id: x.publicId,
+          reference: x.reference,
+          representativeName: x.representativeName,
+          attendeeCount: countMap.get(String(x._id)) ?? 0,
+          createdAt: x.createdAt.toISOString(),
+        })),
         asOf: deps.now().toISOString(),
         timezone: event.timezone,
       };
@@ -272,7 +392,10 @@ export function adminRoutes(deps: AppDeps): Router {
       if (q.status !== 'all') filter.status = q.status;
       if (q.late) filter.lateRegistration = q.late === 'true';
       if (q.createdFrom || q.createdTo) {
-        filter.createdAt = { ...(q.createdFrom ? { $gte: new Date(q.createdFrom) } : {}), ...(q.createdTo ? { $lte: new Date(q.createdTo) } : {}) };
+        filter.createdAt = {
+          ...(q.createdFrom ? { $gte: new Date(q.createdFrom) } : {}),
+          ...(q.createdTo ? { $lte: new Date(q.createdTo) } : {}),
+        };
       }
       if (q.categoryId === 'none') filter.eventCategoryId = null;
       else if (q.categoryId) {
@@ -293,32 +416,61 @@ export function adminRoutes(deps: AppDeps): Router {
           and.push({ 'contacts.mobile': phone });
         } else {
           const n = normalizeName(term);
-          if (n.length < 2) throw new HttpError(422, 'validation_failed', 'Search term too short', { q: ['Type at least 2 letters'] });
+          if (n.length < 2)
+            throw new HttpError(422, 'validation_failed', 'Search term too short', {
+              q: ['Type at least 2 letters'],
+            });
           const rx = { $regex: escapeRegex(n) };
-          const hits = await Attendee.find({ eventId: event._id, status: 'active', normalizedName: rx }).select('registrationId fullName').limit(500).lean();
+          const hits = await Attendee.find({ eventId: event._id, status: 'active', normalizedName: rx })
+            .select('registrationId fullName')
+            .limit(500)
+            .lean();
           for (const h of hits) {
             const k = String(h.registrationId);
             matchedByReg.set(k, [...(matchedByReg.get(k) ?? []), h.fullName]);
           }
-          and.push({ $or: [{ representativeNameNormalized: rx }, { _id: { $in: hits.map((h) => h.registrationId) } }] });
+          and.push({
+            $or: [{ representativeNameNormalized: rx }, { _id: { $in: hits.map((h) => h.registrationId) } }],
+          });
         }
       }
       if (q.rsvp) {
-        const ids = await Attendee.distinct('registrationId', { eventId: event._id, status: 'active', rsvp: q.rsvp });
+        const ids = await Attendee.distinct('registrationId', {
+          eventId: event._id,
+          status: 'active',
+          rsvp: q.rsvp,
+        });
         and.push({ _id: { $in: ids } });
       }
       if (and.length) filter.$and = and;
       const sortField = q.sort.replace('-', '');
-      const sort: Record<string, 1 | -1> = { [sortField === 'representativeName' ? 'representativeNameNormalized' : sortField]: q.sort.startsWith('-') ? -1 : 1, _id: 1 };
+      const sort: Record<string, 1 | -1> = {
+        [sortField === 'representativeName' ? 'representativeNameNormalized' : sortField]: q.sort.startsWith(
+          '-',
+        )
+          ? -1
+          : 1,
+        _id: 1,
+      };
       const [total, regs, categories] = await Promise.all([
         Registration.countDocuments(filter),
-        Registration.find(filter).sort(sort).skip((q.page - 1) * q.limit).limit(q.limit).lean(),
+        Registration.find(filter)
+          .sort(sort)
+          .skip((q.page - 1) * q.limit)
+          .limit(q.limit)
+          .lean(),
         EventCategory.find({ eventId: event._id }).lean(),
       ]);
       const catLabel = new Map(categories.map((c) => [String(c._id), c.label]));
-      const attendees = await Attendee.find({ registrationId: { $in: regs.map((x) => x._id) }, status: 'active' }).select('registrationId rsvp').lean();
+      const attendees = await Attendee.find({
+        registrationId: { $in: regs.map((x) => x._id) },
+        status: 'active',
+      })
+        .select('registrationId rsvp')
+        .lean();
       const byReg = new Map<string, { rsvp: string }[]>();
-      for (const a of attendees) byReg.set(String(a.registrationId), [...(byReg.get(String(a.registrationId)) ?? []), a]);
+      for (const a of attendees)
+        byReg.set(String(a.registrationId), [...(byReg.get(String(a.registrationId)) ?? []), a]);
       const items: AdminRegistrationListItem[] = regs.map((x) => {
         const s = countSummary(byReg.get(String(x._id)) ?? []);
         return {
@@ -335,7 +487,9 @@ export function adminRoutes(deps: AppDeps): Router {
           lateRegistration: x.lateRegistration,
           source: x.source,
           createdAt: x.createdAt.toISOString(),
-          ...(matchedByReg.has(String(x._id)) ? { matchedAttendees: matchedByReg.get(String(x._id))!.slice(0, 5) } : {}),
+          ...(matchedByReg.has(String(x._id))
+            ? { matchedAttendees: matchedByReg.get(String(x._id))!.slice(0, 5) }
+            : {}),
         };
       });
       const body: Paginated<AdminRegistrationListItem> = { items, page: q.page, limit: q.limit, total };
@@ -369,7 +523,12 @@ export function adminRoutes(deps: AppDeps): Router {
       );
       flagPossibleDuplicates(event, created.registration, created.attendees).catch(() => undefined);
       const categories = await EventCategory.find({ eventId: event._id }).lean();
-      res.status(201).json({ registration: adminDto(created.registration, created.attendees, categories), confirmationEmailQueued: created.emailQueued });
+      res
+        .status(201)
+        .json({
+          registration: adminDto(created.registration, created.attendees, categories),
+          confirmationEmailQueued: created.emailQueued,
+        });
     }),
   );
 
@@ -387,7 +546,15 @@ export function adminRoutes(deps: AppDeps): Router {
     committee,
     ah(async (req, res) => {
       const reg = await loadRegistration(req);
-      await audit({ organizationId: reg.organizationId, eventId: reg.eventId, actor: actorOf(req), action: 'registration.viewed', subjectType: 'registration', subjectId: reg.publicId, requestId: req.requestId });
+      await audit({
+        organizationId: reg.organizationId,
+        eventId: reg.eventId,
+        actor: actorOf(req),
+        action: 'registration.viewed',
+        subjectType: 'registration',
+        subjectId: reg.publicId,
+        requestId: req.requestId,
+      });
       res.set('Cache-Control', 'no-store').json({ registration: await detail(ev(req), reg._id) });
     }),
   );
@@ -397,9 +564,22 @@ export function adminRoutes(deps: AppDeps): Router {
     committee,
     ah(async (req, res) => {
       const reg = await loadRegistration(req);
-      const logs = await AuditLog.find({ eventId: reg.eventId, subjectId: reg.publicId, action: { $ne: 'registration.viewed' } }).sort({ timestamp: -1 }).limit(100).lean();
+      const logs = await AuditLog.find({
+        eventId: reg.eventId,
+        subjectId: reg.publicId,
+        action: { $ne: 'registration.viewed' },
+      })
+        .sort({ timestamp: -1 })
+        .limit(100)
+        .lean();
       res.json({
-        items: logs.map((l) => ({ action: l.action, actorType: l.actorType, actorId: l.actorId ?? null, timestamp: l.timestamp.toISOString(), metadata: l.metadata })),
+        items: logs.map((l) => ({
+          action: l.action,
+          actorType: l.actorType,
+          actorId: l.actorId ?? null,
+          timestamp: l.timestamp.toISOString(),
+          metadata: l.metadata,
+        })),
       });
     }),
   );
@@ -412,10 +592,25 @@ export function adminRoutes(deps: AppDeps): Router {
       const body = parse(registrationUpdateSchema, req.body);
       const notify = req.query.notify !== 'false';
       await withTransaction((session) =>
-        updateRegistration({ event: ev(req), registrationId: reg._id, body, actor: actorOf(req), requestId: req.requestId, allowContactChange: true, notify }, session),
+        updateRegistration(
+          {
+            event: ev(req),
+            registrationId: reg._id,
+            body,
+            actor: actorOf(req),
+            requestId: req.requestId,
+            allowContactChange: true,
+            notify,
+          },
+          session,
+        ),
       );
       const updated = (await Registration.findById(reg._id).lean())!;
-      flagPossibleDuplicates(ev(req), updated, await Attendee.find({ registrationId: reg._id, status: 'active' }).lean()).catch(() => undefined);
+      flagPossibleDuplicates(
+        ev(req),
+        updated,
+        await Attendee.find({ registrationId: reg._id, status: 'active' }).lean(),
+      ).catch(() => undefined);
       res.json({ registration: await detail(ev(req), reg._id) });
     }),
   );
@@ -427,7 +622,18 @@ export function adminRoutes(deps: AppDeps): Router {
       const reg = await loadRegistration(req);
       const body = parse(registrationCancelSchema, req.body);
       await withTransaction((session) =>
-        cancelRegistration({ event: ev(req), registrationId: reg._id, revision: body.revision, reason: body.reason, actor: actorOf(req), requestId: req.requestId, notify: req.query.notify !== 'false' }, session),
+        cancelRegistration(
+          {
+            event: ev(req),
+            registrationId: reg._id,
+            revision: body.revision,
+            reason: body.reason,
+            actor: actorOf(req),
+            requestId: req.requestId,
+            notify: req.query.notify !== 'false',
+          },
+          session,
+        ),
       );
       res.json({ registration: await detail(ev(req), reg._id) });
     }),

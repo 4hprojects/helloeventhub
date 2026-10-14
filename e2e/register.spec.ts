@@ -8,7 +8,10 @@ test.describe('public registration (mobile)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Alsem');
     await page.getByRole('link', { name: /register/i }).click();
     await expectNoHorizontalOverflow(page);
-    const [ics] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Add to calendar' }).click()]);
+    const [ics] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'Add to calendar' }).click(),
+    ]);
     expect(ics.suggestedFilename()).toBe(`${SLUG}.ics`);
     await page.getByRole('link', { name: 'Register now' }).click();
 
@@ -29,7 +32,7 @@ test.describe('public registration (mobile)', () => {
 
     // Step 2
     await expect(page.getByRole('heading', { name: 'Family branch' })).toBeVisible();
-    await page.getByLabel('Family branch').selectOption({ label: '4. Toribio – Virginia Villanueva' });
+    await page.getByLabel('Family branch').selectOption({ label: '4. Toribio — Virginia Villanueva' });
     await page.getByRole('button', { name: 'Continue' }).click();
 
     // Step 3: rep not attending by default; add 4 people
@@ -73,8 +76,13 @@ test.describe('public registration (mobile)', () => {
       await person.getByRole('radio', { name: i % 4 ? 'Adult' : 'Child', exact: true }).check();
     }
     // One tap answers for everyone.
-    await page.getByRole('group', { name: "Set everyone's answer" }).getByRole('button', { name: 'Yes, attending' }).click();
-    await expect(page.getByRole('radio', { name: 'Yes, attending', exact: true, checked: true })).toHaveCount(20);
+    await page
+      .getByRole('group', { name: "Set everyone's answer" })
+      .getByRole('button', { name: 'Yes, attending' })
+      .click();
+    await expect(page.getByRole('radio', { name: 'Yes, attending', exact: true, checked: true })).toHaveCount(
+      20,
+    );
     await expect(page.getByRole('button', { name: /Add (a|another) person/ })).toHaveCount(0);
     await expect(page.getByText('You can add up to 20 people')).toBeVisible();
     await expectNoHorizontalOverflow(page);

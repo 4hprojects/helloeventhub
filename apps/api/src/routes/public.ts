@@ -54,7 +54,9 @@ export function publicRoutes(deps: AppDeps): Router {
 
   r.get('/health', (_req, res) => {
     const db = dbState();
-    res.status(db === 'connected' ? 200 : 503).json({ status: db === 'connected' ? 'ok' : 'degraded', version: config.version, db });
+    res
+      .status(db === 'connected' ? 200 : 503)
+      .json({ status: db === 'connected' ? 'ok' : 'degraded', version: config.version, db });
   });
 
   r.get('/public-config', (_req, res) => {
@@ -71,12 +73,15 @@ export function publicRoutes(deps: AppDeps): Router {
     '/events/:slug',
     ah(async (req, res) => {
       const event = await loadPublicEvent(String(req.params.slug));
-      const categories = await EventCategory.find({ eventId: event._id, active: true }).sort({ sortOrder: 1 }).lean();
+      const categories = await EventCategory.find({ eventId: event._id, active: true })
+        .sort({ sortOrder: 1 })
+        .lean();
       const win = registrationWindow(event, deps.now());
       const body: PublicEvent = {
         id: event.publicId,
         slug: event.slug,
         title: event.title,
+        tagline: event.tagline ?? '',
         description: event.description ?? '',
         venueName: event.venueName ?? null,
         venueAddress: event.venueAddress ?? null,
@@ -85,6 +90,7 @@ export function publicRoutes(deps: AppDeps): Router {
         endsAt: event.endsAt.toISOString(),
         onsiteRegistrationStartsAt: event.onsiteRegistrationStartsAt.toISOString(),
         timezone: event.timezone,
+        preregistrationDeadlineDate: event.preregistrationDeadlineDate ?? null,
         registrationOpen: win.open,
         registrationMessage: win.message,
         lateRegistration: win.late,
@@ -124,7 +130,11 @@ export function publicRoutes(deps: AppDeps): Router {
         const prior = await SubmissionKey.findOne({ eventId: event._id, idempotencyKeyHash }).lean();
         if (!prior) return false;
         if (prior.requestHash !== requestHash) {
-          throw new HttpError(409, 'idempotency_conflict', 'This form was already submitted with different details. Please reload the page to start a new registration.');
+          throw new HttpError(
+            409,
+            'idempotency_conflict',
+            'This form was already submitted with different details. Please reload the page to start a new registration.',
+          );
         }
         res.status(201).set('Idempotent-Replayed', 'true').json(prior.response);
         return true;
@@ -134,7 +144,11 @@ export function publicRoutes(deps: AppDeps): Router {
       const win = registrationWindow(event, deps.now());
       if (!win.open) throw new HttpError(422, 'registration_closed', win.message ?? 'Registration is closed');
       if (body.consentVersion !== event.consentVersion) {
-        throw new HttpError(422, 'consent_outdated', 'The privacy notice was updated. Please reload the page and review it again.');
+        throw new HttpError(
+          422,
+          'consent_outdated',
+          'The privacy notice was updated. Please reload the page and review it again.',
+        );
       }
 
       const check = await deps.turnstile.verify(turnstileToken, req.clientIp);
@@ -148,7 +162,11 @@ export function publicRoutes(deps: AppDeps): Router {
         botCheck = 'unverified';
         logger.warn({ requestId: req.requestId }, 'turnstile unavailable; accepting with fail-open');
       } else {
-        throw new HttpError(422, 'bot_check_failed', 'Verification failed. Please complete the security check and try again.');
+        throw new HttpError(
+          422,
+          'bot_check_failed',
+          'Verification failed. Please complete the security check and try again.',
+        );
       }
 
       let created: Awaited<ReturnType<typeof createRegistration>>;
@@ -177,7 +195,16 @@ export function publicRoutes(deps: AppDeps): Router {
             lateRegistration: win.late,
           };
           await SubmissionKey.create(
-            [{ eventId: event._id, idempotencyKeyHash, requestHash, registrationId: c.registration._id, response: resp, expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS) }],
+            [
+              {
+                eventId: event._id,
+                idempotencyKeyHash,
+                requestHash,
+                registrationId: c.registration._id,
+                response: resp,
+                expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS),
+              },
+            ],
             { session },
           );
           return { created: c, response: resp };
@@ -188,7 +215,10 @@ export function publicRoutes(deps: AppDeps): Router {
         throw err;
       }
       flagPossibleDuplicates(event, created.registration, created.attendees).catch((err) =>
-        logger.error({ err: { message: (err as Error).message }, requestId: req.requestId }, 'duplicate flagging failed'),
+        logger.error(
+          { err: { message: (err as Error).message }, requestId: req.requestId },
+          'duplicate flagging failed',
+        ),
       );
       res.status(201).json(response);
     }),
@@ -201,7 +231,15 @@ export function publicRoutes(deps: AppDeps): Router {
     ah(async (req, res) => {
       const body = parse(accessRequestSchema, req.body);
       const respond = () => res.status(202).json({ message: GENERIC_ACCESS_MESSAGE });
-      if (await hitLimit('access-target', sha256(`${body.eventSlug}:${normalizeEmail(body.email)}`), 60 * 60 * 1000, 3)) return respond();
+      if (
+        await hitLimit(
+          'access-target',
+          sha256(`${body.eventSlug}:${normalizeEmail(body.email)}`),
+          60 * 60 * 1000,
+          3,
+        )
+      )
+        return respond();
       const event = await Event.findOne({ slug: body.eventSlug, status: 'published' }).lean();
       if (!event) return respond();
       const reg = await Registration.findOne({
@@ -215,7 +253,12 @@ export function publicRoutes(deps: AppDeps): Router {
       await withTransaction(async (session) => {
         await Registration.updateOne(
           { _id: reg._id },
-          { $set: { manageTokenHash: sha256(token), manageTokenExpiry: new Date(Date.now() + MANAGE_TOKEN_TTL_MS) } },
+          {
+            $set: {
+              manageTokenHash: sha256(token),
+              manageTokenExpiry: new Date(Date.now() + MANAGE_TOKEN_TTL_MS),
+            },
+          },
           { session },
         );
         await enqueueEmail(
@@ -230,7 +273,15 @@ export function publicRoutes(deps: AppDeps): Router {
           session,
         );
         await audit(
-          { organizationId: event.organizationId, eventId: event._id, actor: { type: 'public' }, action: 'registration.access_requested', subjectType: 'registration', subjectId: reg.publicId, requestId: req.requestId },
+          {
+            organizationId: event.organizationId,
+            eventId: event._id,
+            actor: { type: 'public' },
+            action: 'registration.access_requested',
+            subjectType: 'registration',
+            subjectId: reg.publicId,
+            requestId: req.requestId,
+          },
           session,
         );
       });
@@ -249,14 +300,31 @@ export function publicRoutes(deps: AppDeps): Router {
         { $unset: { manageTokenHash: 1, manageTokenExpiry: 1 }, $set: { emailVerifiedAt: new Date() } },
         { new: true },
       ).lean();
-      if (!reg) throw new HttpError(401, 'invalid_link', 'This link is invalid or has expired. Please request a new one.');
+      if (!reg)
+        throw new HttpError(
+          401,
+          'invalid_link',
+          'This link is invalid or has expired. Please request a new one.',
+        );
       // New session id (fixation protection), but keep an admin who is signed in on this browser signed in.
       const { userId, authAt } = req.session;
       await regenerateSession(req);
       if (userId && authAt) Object.assign(req.session, { userId, authAt });
-      req.session.owner = { registrationId: reg.publicId, eventId: String(reg.eventId), expiresAt: Date.now() + OWNER_SESSION_TTL_MS };
+      req.session.owner = {
+        registrationId: reg.publicId,
+        eventId: String(reg.eventId),
+        expiresAt: Date.now() + OWNER_SESSION_TTL_MS,
+      };
       const csrfToken = ensureCsrfToken(req.session);
-      await audit({ organizationId: reg.organizationId, eventId: reg.eventId, actor: { type: 'owner', id: reg.publicId }, action: 'registration.owner_verified', subjectType: 'registration', subjectId: reg.publicId, requestId: req.requestId });
+      await audit({
+        organizationId: reg.organizationId,
+        eventId: reg.eventId,
+        actor: { type: 'owner', id: reg.publicId },
+        action: 'registration.owner_verified',
+        subjectType: 'registration',
+        subjectId: reg.publicId,
+        requestId: req.requestId,
+      });
       res.json({ csrfToken });
     }),
   );
@@ -284,7 +352,9 @@ export function publicRoutes(deps: AppDeps): Router {
     '/registrations/manage',
     ah(async (req, res) => {
       const { reg, event } = await loadOwned(req);
-      res.set('Cache-Control', 'no-store').json({ registration: await ownerView(event, reg._id), csrfToken: ensureCsrfToken(req.session) });
+      res
+        .set('Cache-Control', 'no-store')
+        .json({ registration: await ownerView(event, reg._id), csrfToken: ensureCsrfToken(req.session) });
     }),
   );
 
@@ -296,7 +366,11 @@ export function publicRoutes(deps: AppDeps): Router {
   const assertOwnerCanEdit = (event: EventDoc, publicId: string, ownedId: string) => {
     if (publicId !== ownedId) throw notFound('Registration');
     if (deps.now() >= ownerEditDeadline(event)) {
-      throw new HttpError(422, 'edit_window_closed', 'Online changes are closed. Please contact the organizers.');
+      throw new HttpError(
+        422,
+        'edit_window_closed',
+        'Online changes are closed. Please contact the organizers.',
+      );
     }
   };
 
@@ -309,13 +383,23 @@ export function publicRoutes(deps: AppDeps): Router {
       const body = parse(registrationUpdateSchema, req.body);
       await withTransaction((session) =>
         updateRegistration(
-          { event, registrationId: reg._id, body, actor: { type: 'owner', id: reg.publicId }, requestId: req.requestId, allowContactChange: false, notify: true },
+          {
+            event,
+            registrationId: reg._id,
+            body,
+            actor: { type: 'owner', id: reg.publicId },
+            requestId: req.requestId,
+            allowContactChange: false,
+            notify: true,
+          },
           session,
         ),
       );
       const view = await ownerView(event, reg._id);
       const attendees = await Attendee.find({ registrationId: reg._id, status: 'active' }).lean();
-      flagPossibleDuplicates(event, (await Registration.findById(reg._id).lean())!, attendees).catch(() => undefined);
+      flagPossibleDuplicates(event, (await Registration.findById(reg._id).lean())!, attendees).catch(
+        () => undefined,
+      );
       res.json({ registration: view });
     }),
   );
@@ -329,7 +413,15 @@ export function publicRoutes(deps: AppDeps): Router {
       const body = parse(registrationCancelSchema, req.body);
       await withTransaction((session) =>
         cancelRegistration(
-          { event, registrationId: reg._id, revision: body.revision, reason: body.reason, actor: { type: 'owner', id: reg.publicId }, requestId: req.requestId, notify: true },
+          {
+            event,
+            registrationId: reg._id,
+            revision: body.revision,
+            reason: body.reason,
+            actor: { type: 'owner', id: reg.publicId },
+            requestId: req.requestId,
+            notify: true,
+          },
           session,
         ),
       );

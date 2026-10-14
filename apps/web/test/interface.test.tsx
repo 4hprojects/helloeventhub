@@ -15,25 +15,31 @@ vi.mock('../src/lib/session', () => ({
 import { PublicLayout } from '../src/components/Layout';
 import { PasswordField } from '../src/components/ui';
 import AboutPage from '../src/pages/public/AboutPage';
+import EventPage from '../src/pages/public/EventPage';
 import RegisterPage from '../src/pages/public/RegisterPage';
 import LoginPage from '../src/pages/admin/LoginPage';
 
 const event = {
   id: 'event-id',
   slug: 'family-day',
-  title: 'Family Day',
-  description: 'A family event.',
-  venueName: null,
-  venueAddress: null,
-  venueMapUrl: null,
+  title: '1st Menay Bugtong - Wakat Alsem Clan Reunion',
+  tagline: 'One Family, Many Faces, New Connections',
+  description: "You're invited to our first clan reunion!",
+  venueName: 'Veterans Building',
+  venueAddress: 'Puguis, La Trinidad, Benguet',
+  venueMapUrl: 'https://maps.app.goo.gl/6NLwRQT4iLkmXosD6',
   startsAt: '2026-10-24T01:00:00.000Z',
   endsAt: '2026-10-24T07:00:00.000Z',
   onsiteRegistrationStartsAt: '2026-10-24T00:00:00.000Z',
   timezone: 'Asia/Manila',
+  preregistrationDeadlineDate: '2026-10-20',
   registrationOpen: true,
   registrationMessage: '',
   lateRegistration: false,
-  categories: [],
+  categories: [
+    { id: 'branch-1', label: '1. Albina — Baon Tinay / Magastino' },
+    { id: 'other', label: 'Other/Unsure' },
+  ],
   ageCategoryNote: 'Child means age 12 or younger.',
   consentVersion: 'v1',
   privacyNotice: 'We use these details to plan the event.',
@@ -69,6 +75,43 @@ describe('public interface', () => {
       'aria-current',
       'page',
     );
+  });
+
+  it('presents the approved reunion essentials, heritage wording, actions and metadata', async () => {
+    const originalTitle = document.title;
+    const router = createMemoryRouter(
+      [
+        { path: '/events/:slug', element: <EventPage /> },
+        { path: '/about', element: <AboutPage /> },
+      ],
+      { initialEntries: ['/events/family-day'] },
+    );
+    const view = render(<RouterProvider router={router} />);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      '1st Menay Bugtong - Wakat Alsem Clan Reunion',
+    );
+    expect(screen.getByText('One Family, Many Faces, New Connections')).toBeVisible();
+    expect(screen.getByText(/Online preregistration deadline: October 20, 2026/)).toBeVisible();
+    expect(screen.getByText('Associated names: Baon Tinay / Magastino')).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Start registration' })).toHaveAttribute(
+      'href',
+      '/events/family-day/register',
+    );
+    expect(screen.getAllByRole('link', { name: /directions|Google Maps/i })[0]).toHaveAttribute(
+      'href',
+      event.venueMapUrl,
+    );
+    expect(screen.getByRole('link', { name: 'Download invitation' })).toHaveAttribute(
+      'download',
+      'mb-wa-reunion-2026-invitation.png',
+    );
+    expect(document.title).toBe(`${event.title} | HelloEventHub`);
+    expect(document.head.querySelector('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      'https://helloeventhub.online/events/family-day',
+    );
+    view.unmount();
+    expect(document.title).toBe(originalTitle);
   });
 
   it('orients staff at login and directs attendees to the accountless public flow', () => {

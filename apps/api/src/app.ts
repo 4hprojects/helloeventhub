@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import compression from 'compression';
@@ -10,15 +10,61 @@ import mongoose from 'mongoose';
 import { pinoHttp } from 'pino-http';
 import type { AppDeps } from './app-deps.js';
 import { HttpError } from './lib/errors.js';
+import { Event, type EventDoc } from './db/models.js';
 import { ADMIN_SESSION_MAX_AGE_MS, requireAdmin, requireCsrf } from './middleware/auth.js';
-import { clientIp } from './middleware/clientIp.js';
-import { errorHandler, notFoundHandler, requestId } from './middleware/core.js';
+import { clientIp, isCloudflareIp } from './middleware/clientIp.js';
+import { ah, errorHandler, notFoundHandler, requestId } from './middleware/core.js';
 import { adminRoutes } from './routes/admin.js';
 import { authRoutes } from './routes/auth.js';
 import { publicRoutes } from './routes/public.js';
 import { extraRoutes } from './routes/registry.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+
+const escapeHtml = (value: string) =>
+  value.replace(
+    /[&<>"']/g,
+    (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!,
+  );
+
+export function injectEventMetadata(template: string, event: EventDoc, origin: string): string {
+  const canonical = `${origin}/events/${encodeURIComponent(event.slug)}`;
+  const image = `${canonical}/social-preview.png`;
+  const description =
+    `Join the ${event.title} on October 24, 2026 at ${[event.venueName, event.venueAddress].filter(Boolean).join(', ')}. ${event.tagline ?? ''}`.trim();
+  const title = `${event.title} | HelloEventHub`;
+  const jsonLd = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: event.title,
+    startDate: event.startsAt.toISOString(),
+    endDate: event.endsAt.toISOString(),
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    location: { '@type': 'Place', name: event.venueName, address: event.venueAddress },
+    url: canonical,
+    image,
+    description,
+  }).replace(/</g, '\\u003c');
+  return template
+    .replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(title)}</title>`)
+    .replace(
+      /<meta name="description"[^>]*>/,
+      `<meta name="description" content="${escapeHtml(description)}" />`,
+    )
+    .replace(
+      /<meta property="og:title"[^>]*>/,
+      `<meta property="og:title" content="${escapeHtml(event.title)}" />`,
+    )
+    .replace(
+      /<meta property="og:description"[^>]*>/,
+      `<meta property="og:description" content="${escapeHtml(description)}" />`,
+    )
+    .replace(/<meta property="og:image"[^>]*>/, `<meta property="og:image" content="${escapeHtml(image)}" />`)
+    .replace(
+      '</head>',
+      `    <meta property="og:type" content="website" />\n    <meta property="og:url" content="${escapeHtml(canonical)}" />\n    <meta name="twitter:card" content="summary_large_image" />\n    <meta name="twitter:title" content="${escapeHtml(event.title)}" />\n    <meta name="twitter:description" content="${escapeHtml(description)}" />\n    <meta name="twitter:image" content="${escapeHtml(image)}" />\n    <link rel="canonical" href="${escapeHtml(canonical)}" />\n    <script type="application/ld+json">${jsonLd}</script>\n  </head>`,
+    );
+}
 
 /** Reject cross-site mutations whose Origin isn't allowlisted (defense in depth alongside CSRF tokens). */
 function originGuard(allowed: string[]): RequestHandler {
@@ -43,9 +89,20 @@ export function createApp(deps: AppDeps) {
   // every public production request to the configured HTTPS origin.
   if (config.isProd) {
     app.use((req, res, next) => {
-      if (req.secure || req.path === '/api/v1/health') return next();
+      const cfVisitorSecure = (() => {
+        if (!config.CLOUDFLARE || !isCloudflareIp(req.ip ?? '')) return false;
+        try {
+          return JSON.parse(req.get('cf-visitor') ?? '{}').scheme === 'https';
+        } catch {
+          return false;
+        }
+      })();
+      if (req.secure || cfVisitorSecure || req.path === '/api/v1/health') return next();
       const origin = new URL(config.APP_BASE_URL).origin;
-      return res.redirect(308, `${origin}${req.originalUrl.startsWith('/') ? req.originalUrl : `/${req.originalUrl}`}`);
+      return res.redirect(
+        308,
+        `${origin}${req.originalUrl.startsWith('/') ? req.originalUrl : `/${req.originalUrl}`}`,
+      );
     });
   }
 
@@ -57,7 +114,11 @@ export function createApp(deps: AppDeps) {
       genReqId: (req) => (req as unknown as { id: string }).id,
       autoLogging: { ignore: (req) => req.url === '/api/v1/health' },
       serializers: {
-        req: (req: { id: string; method: string; url: string }) => ({ id: req.id, method: req.method, path: req.url.split('?')[0] }),
+        req: (req: { id: string; method: string; url: string }) => ({
+          id: req.id,
+          method: req.method,
+          path: req.url.split('?')[0],
+        }),
         res: (res: { statusCode: number }) => ({ statusCode: res.statusCode }),
       },
     }),
@@ -130,13 +191,24 @@ export function createApp(deps: AppDeps) {
   // ---------------------------------------------------------- SPA (same origin)
   const webDist = config.WEB_DIST_DIR ?? path.resolve(here, '../../web/dist');
   if (existsSync(path.join(webDist, 'index.html'))) {
+    const indexTemplate = readFileSync(path.join(webDist, 'index.html'), 'utf8');
     app.use(
       express.static(webDist, {
         index: false,
         setHeaders: (res, file) => {
-          if (file.includes(`${path.sep}assets${path.sep}`)) res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          if (file.includes(`${path.sep}assets${path.sep}`))
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
           else res.setHeader('Cache-Control', 'public, max-age=300');
         },
+      }),
+    );
+    app.get(
+      '/events/:slug',
+      ah(async (req, res, next) => {
+        const event = await Event.findOne({ slug: req.params.slug, status: 'published' }).lean();
+        if (!event) return next();
+        res.setHeader('Cache-Control', 'no-cache');
+        res.type('html').send(injectEventMetadata(indexTemplate, event, new URL(config.APP_BASE_URL).origin));
       }),
     );
     app.get(/^(?!\/api\/).*/, (_req, res) => {

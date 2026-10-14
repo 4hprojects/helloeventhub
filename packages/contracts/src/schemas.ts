@@ -75,7 +75,11 @@ export const contactsSchema = z
       return;
     }
     if (!c.preferred) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['preferred'], message: 'Choose your preferred contact method' });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['preferred'],
+        message: 'Choose your preferred contact method',
+      });
     } else if (!has[c.preferred]) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -98,7 +102,9 @@ export const attendeeInputSchema = z.object({
 });
 export type AttendeeInput = z.input<typeof attendeeInputSchema>;
 
-const attendeesList = z.array(attendeeInputSchema).max(MAX_ATTENDEES, `At most ${MAX_ATTENDEES} attendees per form`);
+const attendeesList = z
+  .array(attendeeInputSchema)
+  .max(MAX_ATTENDEES, `At most ${MAX_ATTENDEES} attendees per form`);
 
 const representativeSchema = z.object({
   name: personName,
@@ -196,7 +202,9 @@ export const adminRegistrationQuerySchema = z.object({
   createdFrom: z.string().datetime({ offset: true }).optional(),
   createdTo: z.string().datetime({ offset: true }).optional(),
   late: z.enum(['true', 'false']).optional(),
-  sort: z.enum(['createdAt', '-createdAt', 'representativeName', '-representativeName']).default('-createdAt'),
+  sort: z
+    .enum(['createdAt', '-createdAt', 'representativeName', '-representativeName'])
+    .default('-createdAt'),
   page: z.coerce.number().int().min(1).max(10_000).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(25),
 });
@@ -207,6 +215,7 @@ const isoDateTime = z.string().datetime({ offset: true });
 export const eventUpdateSchema = z.object({
   revision: z.number().int().min(0),
   title: z.string().trim().min(3).max(160),
+  tagline: z.string().trim().max(200).default(''),
   description: z.string().trim().max(5000).default(''),
   venueName: optionalTrimmed(200),
   venueAddress: optionalTrimmed(500),
@@ -224,6 +233,11 @@ export const eventUpdateSchema = z.object({
   registrationClosesAt: isoDateTime.nullable().optional(),
   selfServiceEditUntil: isoDateTime.nullable().optional(),
   preregSnapshotAt: isoDateTime.nullable().optional(),
+  preregistrationDeadlineDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+    .nullable()
+    .optional(),
   allowLateRegistration: z.boolean(),
   capacity: z.number().int().min(1).max(100_000).nullable().optional(),
   contactInfo: z.object({

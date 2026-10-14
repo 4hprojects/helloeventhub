@@ -17,7 +17,8 @@ export function EventFacts({ event }: { event: PublicEvent }) {
         <dd className="flex gap-3">
           <Clock className="mt-0.5 size-5 shrink-0 text-brand-strong" aria-hidden />
           <span>
-            On-site registration from <strong>{formatTimeInZone(event.onsiteRegistrationStartsAt, tz)}</strong>
+            On-site registration from{' '}
+            <strong>{formatTimeInZone(event.onsiteRegistrationStartsAt, tz)}</strong>
             <br />
             Program {formatTimeInZone(event.startsAt, tz)} – {formatTimeInZone(event.endsAt, tz)}
           </span>
@@ -34,7 +35,7 @@ export function EventFacts({ event }: { event: PublicEvent }) {
                 {event.venueAddress && <span className="block text-ink-muted">{event.venueAddress}</span>}
                 {event.venueMapUrl && (
                   <a href={event.venueMapUrl} target="_blank" rel="noopener noreferrer" className="block">
-                    Open map
+                    View on Google Maps
                   </a>
                 )}
               </>

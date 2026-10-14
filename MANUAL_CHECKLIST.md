@@ -22,8 +22,8 @@ Do not spend pre-launch time on dependency upgrades, refactors, QR scanning, new
 
 | Decision | Current default in the app | Where to set it |
 |---|---|---|
-| [x] Official event title | "Menay Bugtong–Wakat Alsem Clan Reunion 2026" | Settings → Official title |
-| [x] Venue name, address, map link | Keep hidden; public wording is "Venue to be announced" | Settings → Venue (leave all three fields empty) |
+| [x] Official event title | "1st Menay Bugtong - Wakat Alsem Clan Reunion" | Settings → Official title |
+| [x] Venue name, address, map link | Veterans Building, Puguis, La Trinidad, Benguet and the approved Google Maps URL | Settings → Venue |
 | [x] Organizer name | Ruby Sagorsor | Settings → Organizer contact → Note: `Organizer: Ruby Sagorsor. Contact details will be added soon.` |
 | [ ] Organizer contact (email / phone / Messenger) | To be added | Settings → Organizer contact |
 | [x] Event description | Short family-reunion invitation and planning purpose | Settings → Description |
@@ -32,7 +32,7 @@ Do not spend pre-launch time on dependency upgrades, refactors, QR scanning, new
 | [x] Late registration after the cutoff | Allowed, marked "late" | Settings → Accept late registrations |
 | [x] Capacity | No limit | Settings → Capacity (leave empty) |
 | [x] Online changes deadline | Until program start, Oct 24 at 09:00 | Settings → Online changes allowed until |
-| [x] Family branch labels | Numbered Albin–Denio branch/couple labels supplied by the organizer, plus Other/Unsure | Settings → Family branches |
+| [x] Family branch labels | Eight organizer-supplied branches beginning with Albina, using neutral associated-name wording, plus Other/Unsure | Settings → Family branches |
 | [ ] **Privacy notice approval and contact channel** | Controller: Ruby Sagorsor; delete/anonymize by Jan 22, 2027; notice v2 drafted | Add Ruby's public contact, review the notice, then tick "approved" |
 | [ ] Who is event admin vs committee | — | See §5 |
 

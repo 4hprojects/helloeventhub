@@ -22,6 +22,13 @@
   --color-warning-bg: #fffaeb;
   --color-danger: #b42318;
   --color-danger-bg: #fef3f2;
+  --color-heritage: #22633f;
+  --color-heritage-deep: #123f2a;
+  --color-heritage-soft: #e9f1e7;
+  --color-cream: #fff9e8;
+  --color-gold: #d6a62e;
+  --color-gold-light: #f3d77d;
+  --color-gold-soft: #fff3c9;
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-display: 'Plus Jakarta Sans Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
   --radius-card: 12px;

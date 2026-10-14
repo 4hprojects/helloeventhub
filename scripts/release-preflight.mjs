@@ -125,9 +125,14 @@ if (event) {
   const body = event.body;
   const contact = body.contactInfo ?? {};
   record(
-    typeof body.title === 'string' && body.title.length >= 3,
+    body.title === '1st Menay Bugtong - Wakat Alsem Clan Reunion',
     'Official event title',
     String(body.title ?? 'missing'),
+  );
+  record(
+    body.tagline === 'One Family, Many Faces, New Connections',
+    'Official event tagline',
+    String(body.tagline ?? 'missing'),
   );
   record(
     typeof body.description === 'string' && body.description.trim().length > 0,
@@ -155,7 +160,21 @@ if (event) {
     'Family categories',
     `${body.categories?.length ?? 0} active`,
   );
-  record(body.venueName == null, 'Venue intentionally TBA', body.venueName ?? 'Venue to be announced');
+  record(
+    body.venueName === 'Veterans Building' && body.venueAddress === 'Puguis, La Trinidad, Benguet',
+    'Approved venue',
+    [body.venueName, body.venueAddress].filter(Boolean).join(', '),
+  );
+  record(
+    body.venueMapUrl === 'https://maps.app.goo.gl/6NLwRQT4iLkmXosD6',
+    'Approved directions URL',
+    String(body.venueMapUrl ?? 'missing'),
+  );
+  record(
+    body.preregistrationDeadlineDate === '2026-10-20',
+    'Public preregistration deadline date',
+    String(body.preregistrationDeadlineDate ?? 'missing'),
+  );
 }
 
 for (const path of ['/', `/events/${encodeURIComponent(eventSlug)}`]) {
