@@ -38,6 +38,17 @@ export function createApp(deps: AppDeps) {
   app.disable('x-powered-by');
   app.set('trust proxy', config.TRUST_PROXY);
 
+  // Cloudflare preserves the visitor scheme in X-Forwarded-Proto. Keep the
+  // internal HelloDeploy health probe reachable over HTTP, but canonicalize
+  // every public production request to the configured HTTPS origin.
+  if (config.isProd) {
+    app.use((req, res, next) => {
+      if (req.secure || req.path === '/api/v1/health') return next();
+      const origin = new URL(config.APP_BASE_URL).origin;
+      return res.redirect(308, `${origin}${req.originalUrl.startsWith('/') ? req.originalUrl : `/${req.originalUrl}`}`);
+    });
+  }
+
   app.use(requestId);
   app.use(clientIp(config.CLOUDFLARE));
   app.use(

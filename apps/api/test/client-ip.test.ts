@@ -20,9 +20,19 @@ describe('isCloudflareIp', () => {
 describe('rate limits behind Cloudflare', () => {
   let ctx: TestCtx;
   let app: ReturnType<typeof createApp>;
+  let productionApp: ReturnType<typeof createApp>;
   beforeAll(async () => {
     ctx = await setupTestApp();
     app = createApp({ ...ctx.deps, config: { ...ctx.deps.config, CLOUDFLARE: true } });
+    productionApp = createApp({
+      ...ctx.deps,
+      config: {
+        ...ctx.deps.config,
+        NODE_ENV: 'production',
+        isProd: true,
+        APP_BASE_URL: 'https://helloeventhub.online',
+      },
+    });
   });
   afterAll(teardownTestApp);
   beforeEach(async () => {
@@ -53,5 +63,15 @@ describe('rate limits behind Cloudflare', () => {
       await request(ctx.app).post('/api/v1/registrations/access/request').set('X-Forwarded-For', '172.64.1.1').set('CF-Connecting-IP', `203.0.113.${i}`).send({ eventSlug: ctx.eventSlug, email: `w${i}@example.test`, reference: 'HEH-00000000' }).expect(202);
     }
     await request(ctx.app).post('/api/v1/registrations/access/request').set('X-Forwarded-For', '172.64.1.1').set('CF-Connecting-IP', '203.0.113.200').send({ eventSlug: ctx.eventSlug, email: 'x@example.test', reference: 'HEH-00000000' }).expect(429);
+  });
+
+  it('redirects public production HTTP traffic to HTTPS without breaking the internal health probe', async () => {
+    const redirect = await request(productionApp).get(`/events/${ctx.eventSlug}`).expect(308);
+    expect(redirect.headers.location).toBe(`https://helloeventhub.online/events/${ctx.eventSlug}`);
+    await request(productionApp).get('/api/v1/health').expect(200);
+    await request(productionApp)
+      .get(`/api/v1/events/${ctx.eventSlug}`)
+      .set('X-Forwarded-Proto', 'https')
+      .expect(200);
   });
 });
