@@ -12,57 +12,72 @@ export default function EventPage() {
   if (loading) return <Spinner />;
   if (error || !event) return <Alert tone="error" title="Event not found">Check the link you were given, or contact the organizers.</Alert>;
   return (
-    <article className="flex flex-col gap-6">
-      <header className="relative overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br from-brand-deep via-brand-strong to-brand px-4 pb-5 pt-12 sm:px-6 sm:pt-16">
+    <article className="flex flex-col gap-6 sm:gap-8">
+      <header className="relative overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br from-brand-deep via-brand-strong to-brand px-5 pb-8 pt-12 sm:px-8 sm:pb-10 sm:pt-14">
         {/* Decorative: faint Celebration Pine mark and celebration accents (doc 13: coral/amber are accents only). */}
         <img src="/brand/logo-symbol-white.svg" alt="" aria-hidden className="pointer-events-none absolute -right-6 -top-4 h-44 w-44 opacity-15 sm:h-56 sm:w-56" width={224} height={224} />
         <span aria-hidden className="absolute left-6 top-5 size-2 rounded-full bg-brand-amber" />
         <span aria-hidden className="absolute left-11 top-9 size-1.5 rounded-full bg-brand-coral" />
-        <h1 className="relative text-2xl font-bold text-white sm:text-3xl">{event.title}</h1>
-        <p className="relative mt-1 font-medium text-white/90">{formatDateInZone(event.startsAt, event.timezone)}</p>
+        <div className="relative max-w-xl">
+          <p className="mb-2 font-semibold text-white/90">{formatDateInZone(event.startsAt, event.timezone)}</p>
+          <h1 className="text-balance text-2xl font-bold tracking-tight text-white sm:text-3xl">{event.title}</h1>
+        </div>
       </header>
-      <Card>
-        <EventFacts event={event} />
-        <button
-          type="button"
-          onClick={() => downloadIcs(event)}
-          className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-line px-3 text-sm font-semibold text-brand-deep hover:bg-brand-ice"
-        >
-          <CalendarPlus className="size-4" aria-hidden /> Add to calendar
-        </button>
-      </Card>
-      {event.description && (
-        <Card>
-          <h2 className="mb-2 text-lg font-semibold">About</h2>
-          <p className="whitespace-pre-line">{event.description}</p>
-        </Card>
-      )}
-      <Card>
-        <h2 className="text-lg font-semibold">Online pre-registration</h2>
-        {event.registrationOpen ? (
-          <>
-            <p className="mt-2">
-              Register your household so the organizers can plan food and seating. It takes about 3 minutes. No account needed.
-            </p>
-            {event.registrationMessage && <Alert tone="warning" className="mt-3">{event.registrationMessage}</Alert>}
-            <Link
-              to={`/events/${event.slug}/register`}
-              className="mt-4 inline-flex min-h-12 items-center rounded-[10px] bg-brand-strong px-5 font-semibold text-white no-underline hover:bg-brand-deep hover:no-underline"
-            >
-              Register now
-            </Link>
-            <p className="mt-3 text-sm text-ink-muted">
-              Already registered? <Link to="/registration/manage">View or change your registration</Link>.
-            </p>
-          </>
-        ) : (
-          <Alert tone="info" className="mt-2">{event.registrationMessage ?? 'Online registration is not open.'}</Alert>
+
+      <section className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-white shadow-[0_1px_2px_rgba(36,51,72,0.06)]">
+        <div className="p-4 sm:p-6">
+          <EventFacts event={event} />
+          <button
+            type="button"
+            onClick={() => downloadIcs(event)}
+            className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-line px-4 text-sm font-semibold text-brand-deep transition-colors hover:bg-brand-ice"
+          >
+            <CalendarPlus className="size-4" aria-hidden /> Add to calendar
+          </button>
+        </div>
+
+        <section aria-labelledby="registration-heading" className="border-t border-line bg-brand-ice/50 p-4 sm:p-6">
+          <h2 id="registration-heading" className="text-xl font-semibold">Online pre-registration</h2>
+          {event.registrationOpen ? (
+            <>
+              <p className="mt-2 max-w-prose text-pretty">
+                Register your household so the organizers can plan food and seating. It takes about 3 minutes, and no account is needed.
+              </p>
+              {event.registrationMessage && <Alert tone="warning" className="mt-4">{event.registrationMessage}</Alert>}
+              <div className="mt-5 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
+                <Link
+                  to={`/events/${event.slug}/register`}
+                  className="inline-flex min-h-12 w-full items-center justify-center rounded-[10px] bg-brand-strong px-5 font-semibold text-white no-underline transition-colors hover:bg-brand-deep hover:no-underline sm:w-auto"
+                >
+                  Register now
+                </Link>
+                <p className="text-sm text-ink-muted">
+                  Already registered? <Link to="/registration/manage">View or change your registration</Link>.
+                </p>
+              </div>
+            </>
+          ) : (
+            <Alert tone="info" title="Registration is not open yet" className="mt-3">
+              {event.registrationMessage && event.registrationMessage !== 'Online registration is not open yet.'
+                ? event.registrationMessage
+                : 'Please check back here once the organizers announce that registration has opened.'}
+            </Alert>
+          )}
+        </section>
+      </section>
+
+      <div className="grid items-start gap-6 sm:grid-cols-5">
+        {event.description && (
+          <Card className="sm:col-span-3">
+            <h2 className="mb-2 text-lg font-semibold">About the reunion</h2>
+            <p className="max-w-prose whitespace-pre-line text-pretty">{event.description}</p>
+          </Card>
         )}
-      </Card>
-      <Card>
-        <h2 className="mb-2 text-lg font-semibold">Questions?</h2>
-        <ContactInfo event={event} />
-      </Card>
+        <Card className={event.description ? 'sm:col-span-2' : 'sm:col-span-5'}>
+          <h2 className="mb-2 text-lg font-semibold">Questions?</h2>
+          <ContactInfo event={event} />
+        </Card>
+      </div>
     </article>
   );
 }

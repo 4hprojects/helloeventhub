@@ -6,6 +6,18 @@ Legend: 🔴 blocks the public launch (target **Oct 15**) · 🟠 needed by **Oc
 
 ---
 
+## Fast-track work order — October 14
+
+Work these lanes in parallel instead of waiting for hosting to finish before starting the others:
+
+1. **Deployment lane (active now):** create/approve the HelloDeploy project, connect the repository, add the production environment, deploy `812dfb1`, and prove the platform hostname is healthy.
+2. **Service lane (start now):** finish Atlas, backup/restore, Resend domain verification, Turnstile and the session secret. These accounts and DNS records do not need to wait for the app deployment.
+3. **Organizer lane (start now):** obtain Ruby's public contact, approve privacy notice v2, and list each event admin and committee member with their own email address. Do not send passwords through chat or commit them.
+4. **Verification lane (prepare now, execute after health is green):** reserve Gmail/Yahoo/Outlook test inboxes, fake household details and the named person who will run the smoke test. Then run the complete registration/admin/email test without improvising launch data.
+5. **Venue lane (advance after P0 inputs are moving):** inventory the encrypted laptop, router, station devices, chargers and power strip; select operators and a reconciliation owner. Device tokens, roster download and printed reports wait for production data.
+
+Do not spend pre-launch time on dependency upgrades, refactors, QR scanning, new reports or visual enhancements. The code release gates are already green; completing external launch evidence is the shortest path to completion.
+
 ## 1. Organizer decisions 🔴 (enter them in Admin → Settings; nothing is hard-coded)
 
 | Decision | Current default in the app | Where to set it |
@@ -28,9 +40,10 @@ Legend: 🔴 blocks the public launch (target **Oct 15**) · 🟠 needed by **Oc
 
 Deploy the repo with its `Dockerfile` and record pass/fail for each step:
 
-> **Observed Oct 13:** Cloudflare DNS resolves, but both the site and health endpoint return HTTP 525. Preferred fix: configure a valid certificate/HTTPS at the HelloDeploy origin and use Cloudflare Full (strict). Flexible will reach an HTTP-only origin but leaves that hop unencrypted; use it only as a temporary, explicitly accepted fallback.
+> **Observed Oct 14:** Cloudflare DNS resolves, but HTTPS returns HTTP 525 and plain HTTP serves a GoDaddy parked-domain page (`lander_type=parkweb`) instead of HelloEventHub. The HelloDeploy project now exists, has repository/detection/environment setup complete, and is waiting for mandatory administrator review before its first deployment. The signed-in owner account cannot access `/admin/approval-requests` (HTTP 403). After an Admin or Super Admin approves it, deploy the verified release SHA, prove the platform hostname, activate `helloeventhub.online`, replace the parked DNS target with HelloDeploy's supplied CNAME, and keep Cloudflare Full (strict). Do not use Flexible.
 
 - [ ] Control of `helloeventhub.online` and DNS edit access confirmed.
+- [ ] HelloDeploy project created and setup submitted: repository `4hprojects/helloeventhub`, branch `main`, detection ready, and 19 required environment-variable names set. **Next action:** an Admin or Super Admin must approve it at `/admin/approval-requests`; then deploy verified commit `812dfb124cc02f984253cf47a08ca1be86c7fa51` (do not use the stale `0b50659` shown by HelloDeploy's latest-commit label) and confirm the platform hostname is healthy before attaching the custom domain.
 - [ ] DNS A/CNAME set as HelloDeploy instructs; a trusted HTTPS certificate is issued and http redirects to https.
 - [ ] Secrets are set in HelloDeploy's secret store (§3) and don't appear in logs or response headers.
 - [ ] `https://helloeventhub.online/api/v1/health` returns `{"status":"ok","db":"connected"}` (this proves Atlas connectivity).
@@ -47,7 +60,7 @@ Deploy the repo with its `Dockerfile` and record pass/fail for each step:
 - [ ] **Cloudflare Turnstile:** create a widget for `helloeventhub.online` and set `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`.
 - [ ] **Session secret:** generate one with `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` and set it as `SESSION_SECRET`.
 - [ ] Set the other production variables listed in `docs/DEPLOYMENT.md` §2 (`NODE_ENV=production`, `APP_BASE_URL=https://helloeventhub.online`, `TRUST_PROXY=1`, `CLOUDFLARE=true`, …).
-- [ ] Cloudflare → SSL/TLS: use Full (strict) with a valid origin certificate. Full against an HTTP-only origin gives **error 525**. If Flexible is temporarily required, record the risk owner and remediation date.
+- [ ] Cloudflare → SSL/TLS: use Full (strict) with a valid origin certificate. Full against an HTTP-only origin gives **error 525**. Do not use Flexible; move to a TLS-capable managed origin if HelloDeploy cannot meet the deadline.
 
 ## 4. Seed production data 🔴
 
@@ -113,8 +126,8 @@ MONGODB_URI='…' SESSION_SECRET='…' npm run create-admin -- --email member@ex
 ## 10. Code hand-off decisions
 
 - [x] Repository is committed on `main`, connected to `origin`, and includes `.github/workflows/ci.yml`.
-- [x] GitHub Actions run `38347593733` is green for release candidate `61d2562`, including 153 unit/integration tests, E2E/accessibility, the offline/reconnect venue simulation and the Docker image build.
+- [x] GitHub Actions run `38347951383` is green for release candidate `812dfb1`, including 153 unit/integration tests, E2E/accessibility, the offline/reconnect venue simulation and the Docker image build.
 - [ ] Record the actual HelloDeploy commit/image for rollback after production is updated.
 - [x] Playwright E2E/accessibility and the offline/reconnect venue simulation are included in CI through the isolated `npm run test:e2e:self-contained` release gate (14 browser scenarios plus venue reconciliation).
-- [x] Local frontend/API port mismatch fixed; public event, admin login/dashboard and all 14 browser scenarios passed against a temporary local replica set on Oct 13. Local registration is open for organizer review; this does not change production.
-- [ ] On the development laptop, run `sudo usermod -aG docker "$USER"`, sign out and back in, then verify `docker compose up -d` so local MongoDB persists between sessions.
+- [x] Local frontend/API port mismatch fixed; persistent MongoDB, API/Vite health, public event, admin login/dashboard, all 14 browser/accessibility scenarios and venue reconciliation passed on Oct 14. Local registration remains in draft; this does not change production.
+- [x] Docker access works on the development laptop; `docker compose up -d` starts a healthy persistent MongoDB replica set.
