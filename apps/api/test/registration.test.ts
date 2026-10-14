@@ -16,8 +16,11 @@ beforeEach(async () => {
 describe('GET /events/:slug', () => {
   it('returns public details and categories without private data', async () => {
     const res = await request(ctx.app).get(`/api/v1/events/${ctx.eventSlug}`).expect(200);
-    expect(res.body.title).toContain('Alsem');
+    expect(res.body.title).toBe('1st Menay Bugtong–Wakat Alsem Clan Reunion 2026');
     expect(res.body.registrationOpen).toBe(true);
+    expect(res.body.contactInfo.phone).toBe('09618085084');
+    expect(res.body.privacyNoticeApproved).toBe(true);
+    expect(res.body.privacyNotice).not.toMatch(/PENDING|TO CONFIRM|PLACEHOLDER/i);
     expect(res.body.venueName).toBeNull();
     expect(res.body.categories).toHaveLength(10);
     expect(Object.keys(res.body)).not.toEqual(expect.arrayContaining(['registrations']));

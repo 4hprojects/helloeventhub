@@ -4,6 +4,7 @@ import { buildDeps } from './deps.js';
 import { createApp } from './app.js';
 import { startEmailWorker } from './services/emailOutbox.js';
 import { startScheduler } from './services/scheduler.js';
+import { seedPrimaryEvent } from './services/seedData.js';
 import mongoose from 'mongoose';
 
 const config = loadConfig();
@@ -13,6 +14,15 @@ const { logger } = deps;
 await connectDb(config.MONGODB_URI);
 await ensureIndexes();
 logger.info({ version: config.version, env: config.NODE_ENV }, 'database connected, indexes ensured');
+const seeded = await seedPrimaryEvent();
+logger.info(
+  {
+    eventSlug: seeded.event.slug,
+    createdEvent: seeded.createdEvent,
+    createdCategories: seeded.createdCategories,
+  },
+  'primary event seed ensured',
+);
 
 const app = createApp(deps);
 const server = app.listen(config.PORT, () => logger.info({ port: config.PORT }, 'HelloEventHub listening'));

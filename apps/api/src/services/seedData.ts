@@ -32,9 +32,7 @@ const LEGACY_FAMILY_BRANCHES = [
   'Other/Unsure',
 ];
 
-export const DRAFT_PRIVACY_NOTICE = `PENDING ORGANIZER APPROVAL — a public contact channel must be added before registration opens.
-
-Who is responsible: Ruby Sagorsor, event organizer, acts as the personal information controller for registration data collected for the Menay Bugtong–Wakat Alsem Clan Reunion 2026. Contact Ruby using the details published on this site's Help & contact page.
+export const PRIVACY_NOTICE_V2 = `Who is responsible: Ruby Sagorsor, event organizer, acts as the personal information controller for registration data collected for the Menay Bugtong–Wakat Alsem Clan Reunion 2026. Contact Ruby using the details published on this site's Help & contact page.
 
 What we collect: the household representative's name and the contact method(s) they choose (email, mobile number and/or Messenger name or link); each attendee's name, adult/child category and attendance response; the optional family branch; and operational records needed to manage changes and event-day check-in. A parent, guardian or household representative should submit information for children and other household members.
 
@@ -69,9 +67,9 @@ export async function seedPrimaryEvent() {
       organizationId: org._id,
       slug: PRIMARY_EVENT_SLUG,
       // Approved first-event title.
-      title: 'Menay Bugtong–Wakat Alsem Clan Reunion 2026',
+      title: '1st Menay Bugtong–Wakat Alsem Clan Reunion 2026',
       description:
-        'Join the Menay Bugtong–Wakat Alsem Clan Reunion 2026 for a day of family, stories and connection. Please register your household so the organizers can plan food, seating and event materials.',
+        'Join the 1st Menay Bugtong–Wakat Alsem Clan Reunion 2026 for a day of family, stories and connection. Please register your household so the organizers can plan food, seating and event materials.',
       // Intentionally unset: the approved public status is "Venue to be announced".
       startsAt: new Date('2026-10-24T09:00:00+08:00'),
       endsAt: new Date('2026-10-24T15:00:00+08:00'),
@@ -82,12 +80,12 @@ export async function seedPrimaryEvent() {
       registrationClosesAt: null,
       selfServiceEditUntil: new Date('2026-10-24T09:00:00+08:00'),
       allowLateRegistration: true,
-      registrationStatus: 'draft',
+      registrationStatus: 'open',
       status: 'published',
-      contactInfo: { note: 'Organizer: Ruby Sagorsor. Contact details will be added soon.' },
+      contactInfo: { phone: '09618085084', note: 'Organizer: Ruby Sagorsor.' },
       ageCategoryNote: 'Child: 12 years old or younger on October 24, 2026. Adult: 13 years old or older.',
-      privacyNotice: DRAFT_PRIVACY_NOTICE,
-      privacyNoticeApproved: false,
+      privacyNotice: PRIVACY_NOTICE_V2,
+      privacyNoticeApproved: true,
       consentVersion: '2026-10-v2',
     });
   }
