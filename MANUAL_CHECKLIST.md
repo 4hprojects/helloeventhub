@@ -10,7 +10,7 @@ Legend: 🔴 blocks the public launch (target **Oct 15**) · 🟠 needed by **Oc
 
 Work these lanes in parallel instead of waiting for hosting to finish before starting the others:
 
-1. **Deployment lane (active now):** create/approve the HelloDeploy project, connect the repository, add the production environment, deploy `812dfb1`, and prove the platform hostname is healthy.
+1. **Deployment lane (active now):** refresh the HelloDeploy application check against current `origin/main`, approve that exact commit, deploy it with the managed Node settings, and prove the platform hostname is healthy.
 2. **Service lane (start now):** finish Atlas, backup/restore, Resend domain verification, Turnstile and the session secret. These accounts and DNS records do not need to wait for the app deployment.
 3. **Organizer lane (start now):** obtain Ruby's public contact, approve privacy notice v2, and list each event admin and committee member with their own email address. Do not send passwords through chat or commit them.
 4. **Verification lane (prepare now, execute after health is green):** reserve Gmail/Yahoo/Outlook test inboxes, fake household details and the named person who will run the smoke test. Then run the complete registration/admin/email test without improvising launch data.
@@ -38,17 +38,17 @@ Do not spend pre-launch time on dependency upgrades, refactors, QR scanning, new
 
 ## 2. Hosting: HelloDeploy smoke test 🔴 (doc 10)
 
-Deploy the repo with its `Dockerfile` and record pass/fail for each step:
+Deploy the repo with HelloDeploy's managed Node.js 22 runtime and record pass/fail for each step. Use `npm ci`, `npm run build:cloud`, `npm start`, and `/api/v1/health`. HelloDeploy ignores the repository `Dockerfile`; that image remains the tested fallback for another host.
 
 > **Observed Oct 14:** Cloudflare DNS resolves, but HTTPS returns HTTP 525 and plain HTTP serves a GoDaddy parked-domain page (`lander_type=parkweb`) instead of HelloEventHub. The HelloDeploy project now exists, has repository/detection/environment setup complete, and is waiting for mandatory administrator review before its first deployment. The signed-in owner account cannot access `/admin/approval-requests` (HTTP 403). After an Admin or Super Admin approves it, deploy the verified release SHA, prove the platform hostname, activate `helloeventhub.online`, replace the parked DNS target with HelloDeploy's supplied CNAME, and keep Cloudflare Full (strict). Do not use Flexible.
 
 - [ ] Control of `helloeventhub.online` and DNS edit access confirmed.
-- [ ] HelloDeploy project created and setup submitted: repository `4hprojects/helloeventhub`, branch `main`, detection ready, and 19 required environment-variable names set. **Next action:** an Admin or Super Admin must approve it at `/admin/approval-requests`; then deploy verified commit `812dfb124cc02f984253cf47a08ca1be86c7fa51` (do not use the stale `0b50659` shown by HelloDeploy's latest-commit label) and confirm the platform hostname is healthy before attaching the custom domain.
+- [ ] HelloDeploy project created and setup submitted: repository `4hprojects/helloeventhub`, branch `main`, detection ready, and 19 required environment-variable names set. **Next action:** refresh/resubmit so the checked commit exactly matches current `origin/main` (do not approve stale `0b50659`), then have an Admin or Super Admin approve it at `/admin/approval-requests`. Confirm the platform hostname is healthy before attaching the custom domain.
 - [ ] DNS A/CNAME set as HelloDeploy instructs; a trusted HTTPS certificate is issued and http redirects to https.
 - [ ] Secrets are set in HelloDeploy's secret store (§3) and don't appear in logs or response headers.
 - [ ] `https://helloeventhub.online/api/v1/health` returns `{"status":"ok","db":"connected"}` (this proves Atlas connectivity).
 - [ ] Redeploy or restart: data is still there and health is OK again.
-- [ ] Logs are visible in HelloDeploy, and a crash restarts the container (the image has a Docker `HEALTHCHECK`).
+- [ ] HelloDeploy health monitoring uses `/api/v1/health`; logs are visible and the managed process restarts after a crash. The Docker `HEALTHCHECK` applies only to fallback image deployments.
 - [ ] Deep links work, e.g. `https://helloeventhub.online/events/alsem-reunion-2026` loads.
 - [ ] **If any critical step fails**, decide explicitly whether to use a temporary managed host rather than miss Oct 15. The same Docker image runs anywhere.
 

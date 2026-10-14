@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { formatInZone, type DashboardDto } from '@heh/contracts';
 import { Alert, Card, Spinner, Stat } from '../../components/ui';
+import { OrganizerEventShare } from '../../components/EventSharing';
 import { api } from '../../lib/api';
 import { useAsync } from '../../lib/useAsync';
 import { RefreshButton, useAdminEvent } from './AdminShell';
@@ -35,6 +36,7 @@ export default function DashboardPage() {
           {isAdmin ? <Link to="settings">Change in Settings</Link> : 'An event admin can open it in Settings.'}
         </Alert>
       )}
+      <OrganizerEventShare slug={event.slug} title={event.title} />
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Potential (attending + maybe)" value={d.potential} tone="brand" />
         <Stat label="Attending" value={d.confirmed} hint={`${d.confirmedAdults} adults · ${d.confirmedChildren} children`} />

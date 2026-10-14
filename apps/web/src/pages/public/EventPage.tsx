@@ -2,6 +2,7 @@ import { CalendarPlus } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { formatDateInZone, type PublicEvent } from '@heh/contracts';
 import { Alert, Card, Spinner } from '../../components/ui';
+import { ShareEventButton } from '../../components/EventSharing';
 import { usePublicEvent } from '../../lib/publicData';
 import { EventFacts } from './EventDetails';
 import { ContactInfo } from './ContactPage';
@@ -27,13 +28,16 @@ export default function EventPage() {
       <section className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-white shadow-[0_1px_2px_rgba(36,51,72,0.06)]">
         <div className="p-4 sm:p-6">
           <EventFacts event={event} />
-          <button
-            type="button"
-            onClick={() => downloadIcs(event)}
-            className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-line px-4 text-sm font-semibold text-brand-deep transition-colors hover:bg-brand-ice"
-          >
-            <CalendarPlus className="size-4" aria-hidden /> Add to calendar
-          </button>
+          <div className="mt-5 flex flex-wrap items-start gap-2">
+            <button
+              type="button"
+              onClick={() => downloadIcs(event)}
+              className="inline-flex min-h-10 items-center gap-2 rounded-[10px] border border-line px-3 text-sm font-semibold text-brand-deep transition-colors hover:bg-brand-ice"
+            >
+              <CalendarPlus className="size-4" aria-hidden /> Add to calendar
+            </button>
+            <ShareEventButton slug={event.slug} title={event.title} />
+          </div>
         </div>
 
         <section aria-labelledby="registration-heading" className="border-t border-line bg-brand-ice/50 p-4 sm:p-6">

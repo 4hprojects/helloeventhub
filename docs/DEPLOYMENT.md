@@ -1,6 +1,18 @@
 # Deployment guide (HelloDeploy → helloeventhub.online)
 
-The cloud app is **one Docker image** (root `Dockerfile`) that listens on `PORT` (default 3000) and serves both the API and the web app. HelloDeploy builds Docker images with buildx and puts its reverse proxy in front of the container, so set `TRUST_PROXY=1`. The domain is proxied by Cloudflare, so also set `CLOUDFLARE=true`.
+The cloud app is **one Node.js process** that listens on `PORT` (default 3000) and serves both the API and the built web app. HelloDeploy's application check confirms that it manages containerization and ignores the repository `Dockerfile`, so configure its Node 22 runtime directly. The `Dockerfile` remains the tested deployment path for CI and alternate hosts. HelloDeploy puts its reverse proxy in front of the process, so set `TRUST_PROXY=1`. The domain is proxied by Cloudflare, so also set `CLOUDFLARE=true`.
+
+Use these HelloDeploy managed-runtime settings:
+
+| Setting | Value |
+|---|---|
+| Runtime | Node.js 22 |
+| Install | `npm ci` |
+| Build | `npm run build:cloud` |
+| Start | `npm start` |
+| Health path | `/api/v1/health` |
+
+The cloud build intentionally excludes `apps/venue`: the offline venue server runs on the event laptop and is not part of the public web service.
 
 For production traffic containing registrations and staff sessions, prefer end-to-end TLS: configure a valid certificate at the HelloDeploy origin and use Cloudflare **Full (strict)**. Full mode against an origin that does not accept HTTPS produces error 525. Cloudflare Flexible can reach an HTTP-only origin, but the Cloudflare-to-origin hop is unencrypted; use it only as a temporary, explicitly accepted fallback while origin TLS is being enabled—not as an unnoticed production default.
 
@@ -42,7 +54,7 @@ The process refuses to start in production with missing/unsafe values (test Turn
 
 ## 3. First deploy
 
-1. Deploy the repo (HelloDeploy builds the `Dockerfile`). Indexes are created automatically on start.
+1. Confirm HelloDeploy checked the current `origin/main` commit, not the stale `0b50659` approval snapshot. Configure the managed Node settings above, obtain Admin/Super Admin approval, and deploy. Indexes are created automatically on start.
 2. Check `https://helloeventhub.online/api/v1/health` → `{"status":"ok","db":"connected"}`.
 3. Seed and create admins **from a trusted machine** pointing at Atlas:
    ```bash
@@ -66,7 +78,7 @@ It verifies TLS lifetime, HTTP-to-HTTPS redirect, application/database health, p
 
 ## 4. Each release
 
-1. CI green (lint, typecheck, tests, build, docker build).
+1. CI green (lint, typecheck, tests, managed cloud build and Docker fallback build).
 2. Take an Atlas on-demand snapshot.
 3. Deploy. Check `/api/v1/health` and a test registration on staging/production.
 4. Record version, time, person and result.

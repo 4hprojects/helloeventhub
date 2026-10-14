@@ -36,6 +36,10 @@ test('admin signs in, sees headcount, finds and opens a registration', async ({ 
   await expect(page.getByRole('heading', { name: 'Event day' })).toBeVisible();
   await expect(page.getByText('Checked in', { exact: true })).toBeVisible();
   await expect(page.getByText('Walk-ins', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Share this event' })).toBeVisible();
+  await expect(page.getByRole('img', { name: /QR code for/ })).toBeVisible();
+  const [qr] = await Promise.all([page.waitForEvent('download'), page.getByRole('link', { name: 'Download QR code' }).click()]);
+  expect(qr.suggestedFilename()).toBe(`${SLUG}-qr.png`);
 
   await page.getByRole('link', { name: 'Registrations', exact: true }).click();
   await page.getByLabel('Search').fill(`lola ${runTag}`);
