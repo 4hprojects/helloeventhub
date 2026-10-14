@@ -62,7 +62,7 @@ If Docker reports permission denied on Linux, add your account to the `docker` g
 | `npm run lint` / `npm run typecheck`                                    | ESLint / TypeScript across all workspaces                                                    |
 | `npm test`                                                              | Unit + integration tests (API uses an in-memory MongoDB replica set; venue uses temp SQLite) |
 | `npm run build`                                                         | Build web, API bundle and venue server                                                       |
-| `npm start`                                                             | Run the built single-process server (`apps/api/dist/server.js`)                              |
+| `npm start`                                                             | Run the built single-process server; loads root `.env` when present                          |
 | `npm run test:e2e`                                                      | Playwright against a running server (see below)                                              |
 | `npm run test:e2e:self-contained`                                       | Playwright with an isolated temporary MongoDB replica set (run `npm run build` first)        |
 | `npm run preflight`                                                     | Verify the live site's TLS, health, public launch settings, deep links and security headers  |

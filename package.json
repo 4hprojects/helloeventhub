@@ -16,7 +16,7 @@
     "dev": "concurrently -k -n api,web -c blue,green \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
     "build": "npm run build -w apps/web && npm run build -w apps/api && npm run build -w apps/venue",
     "build:cloud": "npm run build -w apps/web && npm run build -w apps/api",
-    "start": "node apps/api/dist/server.js",
+    "start": "node --env-file-if-exists=.env apps/api/dist/server.js",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",
     "format": "prettier --write .",
