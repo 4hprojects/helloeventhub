@@ -50,6 +50,14 @@ export function PublicLayout() {
             <NavLink to="/contact" className={navClass}>
               Help
             </NavLink>
+            <Link
+              to="/admin/login"
+              aria-label="Organizer sign in"
+              className="ml-1 inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-[10px] border border-line bg-white px-1 text-sm font-semibold text-brand-deep no-underline hover:bg-brand-ice hover:no-underline sm:px-3"
+            >
+              <span className="sm:hidden" aria-hidden="true">Sign in</span>
+              <span className="hidden sm:inline" aria-hidden="true">Organizer sign in</span>
+            </Link>
           </nav>
         </div>
       </header>
@@ -67,7 +75,7 @@ export function PublicLayout() {
             <Link to={eventPath}>Event</Link>
             <Link to="/contact">Help &amp; contact</Link>
             <Link to="/privacy">Privacy</Link>
-            <Link to="/admin/login">Committee sign in</Link>
+            <Link to="/admin/login">Organizer sign in</Link>
           </nav>
         </div>
       </footer>

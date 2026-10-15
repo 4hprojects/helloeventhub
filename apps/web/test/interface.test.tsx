@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
@@ -66,7 +66,11 @@ describe('public interface', () => {
 
     expect(screen.getByRole('heading', { name: 'About HelloEventHub' })).toBeVisible();
     expect(screen.getByRole('navigation', { name: 'Site information' })).toHaveTextContent(
-      'Committee sign in',
+      'Organizer sign in',
+    );
+    expect(within(screen.getByRole('navigation', { name: 'Public' })).getByRole('link', { name: 'Organizer sign in' })).toHaveAttribute(
+      'href',
+      '/admin/login',
     );
     expect(screen.getByRole('link', { name: 'About' })).toHaveAttribute('href', '/about');
     await user.click(screen.getAllByRole('link', { name: 'Event' })[0]!);
@@ -120,8 +124,9 @@ describe('public interface', () => {
     });
     render(<RouterProvider router={router} />);
 
-    expect(screen.getByRole('heading', { name: 'Committee sign in' })).toBeVisible();
-    expect(screen.getByText(/Attendees can/)).toHaveTextContent('register without an account');
+    expect(screen.getByRole('heading', { name: 'Organizer sign in' })).toBeVisible();
+    expect(screen.getByText(/event organizers/)).toHaveTextContent('event organizers, admins, and committee staff');
+    expect(screen.getByText(/event organizers/)).toHaveTextContent('register without an account');
     expect(screen.getByRole('link', { name: 'Back to the public site' })).toHaveAttribute('href', '/');
   });
 

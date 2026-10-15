@@ -18,9 +18,9 @@ export default function LoginPage() {
     <main id="main" className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4 py-8">
       <img src="/brand/logo-stacked.svg" alt="HelloEventHub" className="mx-auto mb-6 h-24 w-auto" width={150} height={96} />
       <Card>
-        <h1 className="mb-4 text-xl font-bold">Committee sign in</h1>
+        <h1 className="mb-4 text-xl font-bold">Organizer sign in</h1>
         <p className="mb-4 text-sm text-ink-muted">
-          This area is for event staff. Attendees can <Link to="/">open the public event page</Link> and register without an account.
+          This area is for event organizers, admins, and committee staff. Attendees can <Link to="/">open the public event page</Link> and register without an account.
         </p>
         <form
           className="flex flex-col gap-4"
