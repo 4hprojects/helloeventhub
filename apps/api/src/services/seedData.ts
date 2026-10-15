@@ -6,7 +6,7 @@ const LEGACY_PRIMARY_EVENT_SLUG = 'alsem-reunion-2026';
 
 export const FAMILY_BRANCHES = [
   '1. Albina — Baon Tinay / Magastino',
-  '2. Magdalena — Palag Mat-an',
+  '2. Magdalena — Palaez Mat-an',
   '3. Mary — Francisco Marino',
   '4. Toribio — Virginia Villanueva',
   '5. Ganzon — Pilar Licdan',

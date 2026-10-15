@@ -22,7 +22,14 @@ export const REUNION_EVENT_VALUES = {
 
 const aliases: string[][] = [
   ['1a. Albin – Baon Tinay', '1b. Albin – Magastino', 'Albina', '2b. Albin – Magastino'],
-  ['2. Magdalena – Palaez Mat-an', 'Magdalena'],
+  [
+    '2. Magdalena – Palaez Mat-an',
+    '2. Magdalena — Palag Mat-an',
+    '2. Madalena — Palaez Mat-an',
+    '2. Madalena – Palag Mat-an',
+    'Magdalena',
+    'Madalena',
+  ],
   ['Mary'],
   ['Toribio'],
   ['Ganzon'],

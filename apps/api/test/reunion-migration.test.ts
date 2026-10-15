@@ -18,6 +18,10 @@ describe('2026 reunion migration', () => {
     primary!.label = '1a. Albin – Baon Tinay';
     primary!.labelNormalized = normalizeName(primary!.label);
     await primary!.save();
+    const oldMagdalena = await EventCategory.findOne({ eventId: event!._id }).sort({ sortOrder: 1 }).skip(1);
+    oldMagdalena!.label = '2. Magdalena — Palag Mat-an';
+    oldMagdalena!.labelNormalized = normalizeName(oldMagdalena!.label);
+    await oldMagdalena!.save();
     const secondary = await EventCategory.create({
       organizationId: event!.organizationId,
       eventId: event!._id,

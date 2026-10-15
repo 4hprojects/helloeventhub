@@ -22,7 +22,7 @@ const [eventQr, mapsQr] = await Promise.all([
 
 const branches = [
   ['Albina', 'Baon Tinay / Magastino'],
-  ['Magdalena', 'Palag Mat-an'],
+  ['Magdalena', 'Palaez Mat-an'],
   ['Mary', 'Francisco Marino'],
   ['Toribio', 'Virginia Villanueva'],
   ['Ganzon', 'Pilar Licdan'],
