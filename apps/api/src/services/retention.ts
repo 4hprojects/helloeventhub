@@ -56,6 +56,7 @@ export async function applyRetention(event: EventDoc, mode: RetentionMode, opts:
     await Registration.updateMany(f, {
       $set: { representativeName: 'Anonymized household', representativeNameNormalized: '' },
       $unset: {
+        representativeNameParts: 1,
         'contacts.email': 1,
         'contacts.emailNormalized': 1,
         'contacts.mobile': 1,
@@ -68,7 +69,7 @@ export async function applyRetention(event: EventDoc, mode: RetentionMode, opts:
         manageTokenExpiry: 1,
       },
     });
-    await Attendee.updateMany(f, { $set: { fullName: 'Attendee', normalizedName: '' }, $unset: { notes: 1, venueTempId: 1 } });
+    await Attendee.updateMany(f, { $set: { fullName: 'Attendee', normalizedName: '' }, $unset: { nameParts: 1, notes: 1, venueTempId: 1 } });
   } else {
     await Registration.deleteMany(f);
     await Attendee.deleteMany(f);

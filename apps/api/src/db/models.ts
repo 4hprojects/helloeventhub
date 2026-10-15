@@ -18,6 +18,14 @@ const { ObjectId } = Schema.Types;
 const publicId = { type: String, required: true, unique: true, default: newPublicId, immutable: true };
 const revision = { type: Number, required: true, default: 0, min: 0 };
 const opts = { timestamps: true, strict: 'throw' } as const;
+const nameParts = new Schema(
+  {
+    lastName: { type: String, required: true },
+    firstName: { type: String, required: true },
+    middleName: { type: String },
+  },
+  { _id: false },
+);
 
 // ---------------------------------------------------------------- organizations
 const organizationSchema = new Schema(
@@ -99,6 +107,8 @@ const registrationSchema = new Schema(
     eventId: { type: ObjectId, required: true, ref: 'Event' },
     representativeName: { type: String, required: true },
     representativeNameNormalized: { type: String, required: true },
+    /** Separate name fields when entered that way; representativeName is composed from them. */
+    representativeNameParts: { type: nameParts, default: undefined },
     contacts: {
       email: String,
       emailNormalized: String,
@@ -159,6 +169,7 @@ const attendeeSchema = new Schema(
     registrationId: { type: ObjectId, required: true, ref: 'Registration' },
     fullName: { type: String, required: true },
     normalizedName: { type: String, required: true },
+    nameParts: { type: nameParts, default: undefined },
     ageCategory: { type: String, enum: AGE_CATEGORIES, required: true },
     rsvp: { type: String, enum: RSVP_VALUES, required: true },
     categoryId: { type: ObjectId },

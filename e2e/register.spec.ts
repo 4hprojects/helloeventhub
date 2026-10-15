@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { expectNoHorizontalOverflow, fillPerson, latestMail, SLUG } from './helpers';
+import { expectNoHorizontalOverflow, fillPerson, fillRepName, latestMail, SLUG } from './helpers';
 
 test.describe('public registration (mobile)', () => {
   test('representative + 4 attendees end to end, with no horizontal overflow at 320px', async ({ page }) => {
@@ -23,7 +23,7 @@ test.describe('public registration (mobile)', () => {
     await expect(page.locator('#rep-contacts')).toHaveClass(/border-danger/);
     await expect(page.locator('#rep-email')).not.toHaveAttribute('aria-invalid', 'true');
     await expect(page.locator('#rep-contacts label').filter({ hasText: '(optional)' })).toHaveCount(0);
-    await page.getByLabel('Your full name').fill('E2E Representative');
+    await fillRepName(page, 'E2E Representative');
     await page.getByLabel('Email').fill('e2e-rep@example.test');
     await page.getByLabel('Philippine mobile number').fill('0917 123 4567');
     await page.getByRole('radio', { name: 'Email' }).check();
@@ -64,7 +64,7 @@ test.describe('public registration (mobile)', () => {
 
   test('20 attendees do not break the layout; 21st cannot be added', async ({ page }) => {
     await page.goto(`/events/${SLUG}/register`);
-    await page.getByLabel('Your full name').fill('Big Household Rep');
+    await fillRepName(page, 'Big Household Rep');
     await page.getByLabel('Facebook Messenger name').fill('Big Rep FB');
     await page.getByRole('radio', { name: 'Messenger' }).check();
     await page.getByRole('button', { name: 'Continue' }).click();
@@ -72,7 +72,8 @@ test.describe('public registration (mobile)', () => {
     for (let i = 1; i <= 20; i++) {
       await page.getByRole('button', { name: /Add (a|another) person/ }).click();
       const person = page.getByRole('listitem').filter({ hasText: `Person ${i}` });
-      await person.getByLabel('Full name').fill(`Big Family Member ${i}`);
+      await person.getByLabel('Last name').fill(`Member ${i}`);
+      await person.getByLabel('First name').fill('Big Family');
       await person.getByRole('radio', { name: i % 4 ? 'Adult' : 'Child', exact: true }).check();
     }
     // One tap answers for everyone.
@@ -95,8 +96,11 @@ test.describe('public registration (mobile)', () => {
 
   test('keyboard-only: complete step 1 using Tab and Enter', async ({ page }) => {
     await page.goto(`/events/${SLUG}/register`);
-    await page.getByLabel('Your full name').focus();
-    await page.keyboard.type('Keyboard User');
+    await page.getByLabel('Your last name').focus();
+    await page.keyboard.type('User');
+    await page.keyboard.press('Tab');
+    await page.keyboard.type('Keyboard');
+    await page.keyboard.press('Tab'); // middle name is optional
     await page.keyboard.press('Tab');
     await page.keyboard.type('kb@example.test');
     await expect(page.locator('#rep-email')).toHaveValue('kb@example.test');
@@ -115,7 +119,7 @@ test.describe('public registration (mobile)', () => {
     // Unique per run: access requests are limited to 3/hour per email by design.
     const email = `manage-${Date.now()}@example.test`;
     await page.goto(`/events/${SLUG}/register`);
-    await page.getByLabel('Your full name').fill('Manage Owner');
+    await fillRepName(page, 'Manage Owner');
     await page.locator('#rep-email').fill(email);
     await page.getByRole('radio', { name: 'Email' }).check();
     await page.getByRole('button', { name: 'Continue' }).click();

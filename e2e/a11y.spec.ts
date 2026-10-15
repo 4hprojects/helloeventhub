@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { ADMIN, SLUG } from './helpers';
+import { ADMIN, fillRepName, SLUG } from './helpers';
 
 /** WCAG 2.0/2.1 A + AA automated rules. Manual keyboard/screen-reader checks still apply (doc 05). */
 async function expectNoViolations(page: Page, label: string) {
@@ -29,7 +29,7 @@ test('public pages pass automated WCAG AA checks', async ({ page }) => {
   await expectNoViolations(page, 'step 1');
   await page.getByRole('button', { name: 'Continue' }).click();
   await expectNoViolations(page, 'step 1 with errors');
-  await page.getByLabel('Your full name').fill('Axe Tester');
+  await fillRepName(page, 'Axe Tester');
   await page.locator('#rep-email').fill('axe@example.test');
   await page.getByRole('button', { name: 'Continue' }).click();
   await expectNoViolations(page, 'step 2');

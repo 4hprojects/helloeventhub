@@ -1,3 +1,4 @@
+import type { NameParts } from './normalize.js';
 import type {
   AgeCategory,
   ContactMethod,
@@ -74,7 +75,10 @@ export interface RegistrationCreatedResponse {
 
 export interface AttendeeDto {
   id: string;
+  /** Display name, "Last, First Middle". */
   fullName: string;
+  /** Present when the name was entered as separate parts. */
+  nameParts: NameParts | null;
   ageCategory: AgeCategory;
   rsvp: Rsvp;
   categoryId: string | null;
@@ -95,6 +99,7 @@ export interface OwnerRegistrationDto {
   status: RegistrationStatus;
   revision: number;
   representativeName: string;
+  representativeNameParts: NameParts | null;
   contacts: ContactsDto;
   eventCategoryId: string | null;
   noAttendeesReason: string | null;

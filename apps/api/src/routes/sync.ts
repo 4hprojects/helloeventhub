@@ -309,7 +309,8 @@ async function applyWalkin(device: DeviceCtx, op: Extract<SyncOp, { type: 'walki
 async function applyAttendeeUpdate(device: DeviceCtx, op: Extract<SyncOp, { type: 'attendee_update' }>): Promise<SyncOpResult> {
   const event = device.event;
   const set: Record<string, unknown> = {};
-  if (op.fullName) Object.assign(set, { fullName: cleanDisplayName(op.fullName), normalizedName: normalizeName(op.fullName) });
+  // A venue correction replaces the whole name, so any separately entered parts no longer apply.
+  if (op.fullName) Object.assign(set, { fullName: cleanDisplayName(op.fullName), normalizedName: normalizeName(op.fullName), nameParts: null });
   if (op.ageCategory) set.ageCategory = op.ageCategory;
   if (op.rsvp) set.rsvp = op.rsvp;
   let result: SyncOpResult;

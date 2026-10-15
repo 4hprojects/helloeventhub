@@ -160,7 +160,8 @@ describe('public interface', () => {
     render(<RouterProvider router={router} />);
 
     expect(screen.getByRole('listitem', { current: 'step' })).toHaveTextContent('Current step: Details');
-    await user.type(screen.getByLabelText(/^Your full name/), 'Maria Santos');
+    await user.type(screen.getByLabelText(/^Your last name/), 'Santos');
+    await user.type(screen.getByLabelText(/^Your first name/), 'Maria');
     await user.click(screen.getByRole('link', { name: 'HelloEventHub home' }));
 
     expect(screen.getByRole('heading', { name: 'Leave this registration?' })).toBeVisible();

@@ -63,6 +63,30 @@ describe('POST /events/:id/registrations', () => {
     expect(names).toEqual(['Someone Else']);
   });
 
+  it('stores last, first and middle name separately and composes "Last, First Middle"', async () => {
+    const res = await submit(
+      ctx,
+      registrationPayload({
+        representative: { lastName: 'dela Cruz', firstName: 'Ana  Marie', middleName: 'Reyes', contacts: { email: 'parts@example.test', preferred: 'email' } },
+        attendees: [{ lastName: 'Santos', firstName: 'Juan', middleName: '', ageCategory: 'adult', rsvp: 'confirmed' }],
+      }),
+    ).expect(201);
+    const reg = await Registration.findOne({ reference: res.body.reference }).lean();
+    expect(reg?.representativeName).toBe('dela Cruz, Ana Marie Reyes');
+    expect(reg?.representativeNameParts).toEqual({ lastName: 'dela Cruz', firstName: 'Ana Marie', middleName: 'Reyes' });
+    const [att] = await Attendee.find({ registrationId: reg!._id }).lean();
+    expect(att?.fullName).toBe('Santos, Juan');
+    expect(att?.nameParts).toEqual({ lastName: 'Santos', firstName: 'Juan' });
+  });
+
+  it('rejects a missing last or first name', async () => {
+    const res = await submit(
+      ctx,
+      registrationPayload({ attendees: [{ lastName: 'Santos', firstName: '', ageCategory: 'adult', rsvp: 'confirmed' }] }),
+    ).expect(422);
+    expect(JSON.stringify(res.body)).toContain('attendees.0.firstName');
+  });
+
   it('replays the same result for a retried idempotency key and never duplicates', async () => {
     const key = uid();
     const body = registrationPayload({

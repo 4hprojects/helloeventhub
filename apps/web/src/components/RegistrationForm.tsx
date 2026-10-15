@@ -1,20 +1,24 @@
 import { Plus, Trash2, UserRound } from 'lucide-react';
 import { useState } from 'react';
-import { MAX_ATTENDEES, type AttendeeDto, type ContactMethod, type ContactsDto, type PublicCategory } from '@heh/contracts';
+import { MAX_ATTENDEES, composeFullName, splitFullName, type AttendeeDto, type ContactMethod, type ContactsDto, type NameParts, type PublicCategory } from '@heh/contracts';
 import { Button, Checkbox, RadioGroup, SelectField, TextArea, TextField, cx } from './ui';
 
 export interface AttendeeRow {
   key: string;
   publicId?: string;
   isRep?: boolean;
-  fullName: string;
+  lastName: string;
+  firstName: string;
+  middleName: string;
   ageCategory: 'adult' | 'child' | '';
   rsvp: 'confirmed' | 'tentative' | 'declined' | '';
   categoryId?: string | null;
 }
 
 export interface FormState {
-  repName: string;
+  repLastName: string;
+  repFirstName: string;
+  repMiddleName: string;
   email: string;
   mobile: string;
   messengerDisplayName: string;
@@ -29,11 +33,26 @@ export interface FormState {
 
 let seq = 0;
 export const rowKey = () => `r${Date.now().toString(36)}${(seq++).toString(36)}`;
-export const blankAttendee = (): AttendeeRow => ({ key: rowKey(), fullName: '', ageCategory: '', rsvp: '' });
+export const blankAttendee = (): AttendeeRow => ({ key: rowKey(), lastName: '', firstName: '', middleName: '', ageCategory: '', rsvp: '' });
+
+/** "Last, First Middle" once a last or first name is typed; empty otherwise. */
+export function displayName(p: { lastName: string; firstName: string; middleName?: string }): string {
+  return p.lastName.trim() || p.firstName.trim() ? composeFullName(p) : '';
+}
+
+export const repDisplayName = (s: FormState) => displayName({ lastName: s.repLastName, firstName: s.repFirstName, middleName: s.repMiddleName });
+
+/** Prefill the separate fields from stored parts, or split a name stored as one field. */
+function partsFor(fullName: string, parts: NameParts | null | undefined) {
+  const p = parts ?? splitFullName(fullName);
+  return { lastName: p.lastName, firstName: p.firstName, middleName: p.middleName ?? '' };
+}
 
 export function emptyForm(): FormState {
   return {
-    repName: '',
+    repLastName: '',
+    repFirstName: '',
+    repMiddleName: '',
     email: '',
     mobile: '',
     messengerDisplayName: '',
@@ -49,21 +68,25 @@ export function emptyForm(): FormState {
 
 export function formFromRegistration(r: {
   representativeName: string;
+  representativeNameParts?: NameParts | null;
   contacts: ContactsDto;
   eventCategoryId: string | null;
   attendees: AttendeeDto[];
   noAttendeesReason: string | null;
   notes: string | null;
 }): FormState {
+  const rep = partsFor(r.representativeName, r.representativeNameParts);
   return {
-    repName: r.representativeName,
+    repLastName: rep.lastName,
+    repFirstName: rep.firstName,
+    repMiddleName: rep.middleName,
     email: r.contacts.email ?? '',
     mobile: r.contacts.mobile ?? '',
     messengerDisplayName: r.contacts.messengerDisplayName ?? '',
     messengerProfileUrl: r.contacts.messengerProfileUrl ?? '',
     preferred: r.contacts.preferred,
     eventCategoryId: r.eventCategoryId ?? '',
-    attendees: r.attendees.map((a) => ({ key: a.id, publicId: a.id, fullName: a.fullName, ageCategory: a.ageCategory, rsvp: a.rsvp, categoryId: a.categoryId })),
+    attendees: r.attendees.map((a) => ({ key: a.id, publicId: a.id, ...partsFor(a.fullName, a.nameParts), ageCategory: a.ageCategory, rsvp: a.rsvp, categoryId: a.categoryId })),
     noneAttending: r.attendees.length === 0,
     noAttendeesReason: r.noAttendeesReason ?? '',
     notes: r.notes ?? '',
@@ -75,7 +98,9 @@ export function formToBody(s: FormState) {
   const attendees = s.noneAttending ? [] : s.attendees;
   return {
     representative: {
-      name: s.repName,
+      lastName: s.repLastName,
+      firstName: s.repFirstName,
+      middleName: s.repMiddleName,
       contacts: {
         email: s.email,
         mobile: s.mobile,
@@ -87,7 +112,7 @@ export function formToBody(s: FormState) {
     eventCategoryId: s.eventCategoryId || null,
     attendees: attendees.map((a) => ({
       ...(a.publicId ? { publicId: a.publicId } : {}),
-      fullName: a.isRep ? s.repName : a.fullName,
+      ...(a.isRep ? { lastName: s.repLastName, firstName: s.repFirstName, middleName: s.repMiddleName } : { lastName: a.lastName, firstName: a.firstName, middleName: a.middleName }),
       ageCategory: (a.ageCategory || undefined) as 'adult',
       rsvp: (a.rsvp || undefined) as 'confirmed',
       ...(a.categoryId !== undefined ? { categoryId: a.categoryId || null } : {}),
@@ -102,11 +127,15 @@ export function fieldIdFor(path: string, s: FormState): string {
   const m = /^attendees\.(\d+)\.(\w+)/.exec(path);
   if (m) {
     const row = (s.noneAttending ? [] : s.attendees)[Number(m[1])];
-    const suffix = m[2] === 'fullName' ? 'name' : m[2] === 'ageCategory' ? 'age' : m[2] === 'rsvp' ? 'rsvp' : 'name';
+    const suffixes: Record<string, string> = { firstName: 'first', middleName: 'middle', ageCategory: 'age', rsvp: 'rsvp' };
+    const suffix = suffixes[m[2]!] ?? 'last';
     return row ? `att-${row.key}-${suffix}` : 'attendees';
   }
   const map: Record<string, string> = {
-    'representative.name': 'rep-name',
+    'representative.name': 'rep-last',
+    'representative.lastName': 'rep-last',
+    'representative.firstName': 'rep-first',
+    'representative.middleName': 'rep-middle',
     'representative.contacts.email': 'rep-email',
     'representative.contacts.mobile': 'rep-mobile',
     'representative.contacts.messengerDisplayName': 'rep-msgr-name',
@@ -149,7 +178,7 @@ export function ContactSection({ state, setState, errors, lockContacts }: Sectio
   const [showLink, setShowLink] = useState(false);
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setState((s) => {
-      const n = { ...s, [k]: v, attendees: k === 'repName' ? s.attendees.map((a) => (a.isRep ? { ...a, fullName: String(v) } : a)) : s.attendees };
+      const n = { ...s, [k]: v };
       const methods = availableMethods(n);
       // Keep "preferred" valid: default to the only method given, clear it if its field was emptied.
       if (n.preferred && !methods.includes(n.preferred)) n.preferred = '';
@@ -161,7 +190,11 @@ export function ContactSection({ state, setState, errors, lockContacts }: Sectio
   const groupError = errors['representative.contacts'];
   return (
     <div className="flex flex-col gap-4">
-      <TextField id="rep-name" label="Your full name" required autoComplete="name" value={state.repName} onChange={(e) => set('repName', e.target.value)} error={errors['representative.name']} maxLength={120} />
+      <div className="grid gap-4 sm:grid-cols-3">
+        <TextField id="rep-last" label="Your last name" required autoComplete="family-name" value={state.repLastName} onChange={(e) => set('repLastName', e.target.value)} error={errors['representative.lastName'] ?? errors['representative.name']} maxLength={40} />
+        <TextField id="rep-first" label="Your first name" required autoComplete="given-name" value={state.repFirstName} onChange={(e) => set('repFirstName', e.target.value)} error={errors['representative.firstName']} maxLength={40} />
+        <TextField id="rep-middle" label="Your middle name" optional autoComplete="additional-name" value={state.repMiddleName} onChange={(e) => set('repMiddleName', e.target.value)} error={errors['representative.middleName']} maxLength={30} />
+      </div>
       <fieldset
         id="rep-contacts"
         tabIndex={-1}
@@ -278,15 +311,16 @@ export function AttendeesSection({
   const add = () => {
     const row = blankAttendee();
     setState((s) => ({ ...s, noneAttending: false, attendees: [...s.attendees, row] }));
-    setTimeout(() => document.getElementById(`att-${row.key}-name`)?.focus(), 0);
+    setTimeout(() => document.getElementById(`att-${row.key}-last`)?.focus(), 0);
   };
   const toggleRep = (on: boolean) =>
     setState((s) => ({
       ...s,
       noneAttending: on ? false : s.noneAttending,
-      attendees: on ? [{ key: 'rep', isRep: true, fullName: s.repName, ageCategory: 'adult', rsvp: 'confirmed' }, ...s.attendees] : s.attendees.filter((a) => !a.isRep),
+      attendees: on ? [{ key: 'rep', isRep: true, lastName: '', firstName: '', middleName: '', ageCategory: 'adult', rsvp: 'confirmed' }, ...s.attendees] : s.attendees.filter((a) => !a.isRep),
     }));
   const errIdx = (i: number, f: string) => errors[`attendees.${i}.${f}`];
+  const repName = repDisplayName(state);
   return (
     <div id="attendees" tabIndex={-1} className="flex flex-col gap-4">
       {ageNote && <p className="text-sm text-ink-muted">{ageNote}</p>}
@@ -295,7 +329,7 @@ export function AttendeesSection({
           id="rep-attends"
           checked={!!repRow}
           onChange={(e) => toggleRep(e.target.checked)}
-          label={<>I{state.repName ? ` (${state.repName})` : ''} am also attending or responding for myself</>}
+          label={<>I{repName ? ` (${repName})` : ''} am also attending or responding for myself</>}
           hint="Only people listed below are counted. You are not counted unless you tick this."
         />
       )}
@@ -319,16 +353,20 @@ export function AttendeesSection({
                 {a.isRep && <span className="font-normal text-ink-muted">(you)</span>}
               </p>
               {!a.isRep && (
-                <Button type="button" variant="ghost" size="sm" onClick={() => remove(a.key)} aria-label={`Remove person ${i + 1}${a.fullName ? `, ${a.fullName}` : ''}`}>
+                <Button type="button" variant="ghost" size="sm" onClick={() => remove(a.key)} aria-label={`Remove person ${i + 1}${displayName(a) ? `, ${displayName(a)}` : ''}`}>
                   <Trash2 className="size-4" aria-hidden /> Remove
                 </Button>
               )}
             </div>
             <div className="flex flex-col gap-3">
               {a.isRep ? (
-                <p className="text-base">{state.repName || <span className="text-ink-muted">Enter your name in step 1</span>}</p>
+                <p className="text-base">{repName || <span className="text-ink-muted">Enter your name in step 1</span>}</p>
               ) : (
-                <TextField id={`att-${a.key}-name`} label="Full name" required autoComplete="off" value={a.fullName} onChange={(e) => update(a.key, { fullName: e.target.value })} error={errIdx(i, 'fullName')} maxLength={120} />
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <TextField id={`att-${a.key}-last`} label="Last name" required autoComplete="off" value={a.lastName} onChange={(e) => update(a.key, { lastName: e.target.value })} error={errIdx(i, 'lastName') ?? errIdx(i, 'fullName')} maxLength={40} />
+                  <TextField id={`att-${a.key}-first`} label="First name" required autoComplete="off" value={a.firstName} onChange={(e) => update(a.key, { firstName: e.target.value })} error={errIdx(i, 'firstName')} maxLength={40} />
+                  <TextField id={`att-${a.key}-middle`} label="Middle name" optional autoComplete="off" value={a.middleName} onChange={(e) => update(a.key, { middleName: e.target.value })} error={errIdx(i, 'middleName')} maxLength={30} />
+                </div>
               )}
               <RadioGroup
                 id={`att-${a.key}-age`}

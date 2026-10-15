@@ -9,7 +9,7 @@ import {
   MAX_ATTENDEES,
   RSVP_VALUES,
 } from './enums.js';
-import { isAllowedMessengerUrl, normalizePhMobile } from './normalize.js';
+import { composeFullName, isAllowedMessengerUrl, normalizePhMobile } from './normalize.js';
 
 /** Opaque public identifiers (ULID). */
 export const publicIdSchema = z.string().regex(/^[0-9A-HJKMNP-TV-Z]{26}$/, 'Invalid identifier');
@@ -28,6 +28,64 @@ const optionalTrimmed = (max: number) =>
     .max(max)
     .optional()
     .transform((v) => (v ? v : undefined));
+
+const namePart = (label: string, max: number) =>
+  z
+    .string({ required_error: `Please enter a ${label}` })
+    .trim()
+    .min(1, `Please enter a ${label}`)
+    .max(max, `${label[0]!.toUpperCase()}${label.slice(1)} is too long`)
+    .refine((v) => /\p{L}/u.test(v), `Please enter a ${label}`);
+
+/**
+ * A person's name as Last, First and optional Middle name. The legacy single `fullName`
+ * is still accepted (venue sync, older clients) when no parts are sent; either way the
+ * output carries a composed `fullName` ("Last, First Middle") for display and search.
+ */
+const namePartsShape = {
+  lastName: namePart('last name', 40).optional(),
+  firstName: namePart('first name', 40).optional(),
+  middleName: optionalTrimmed(30).refine(
+    (v) => v === undefined || /\p{L}/u.test(v),
+    'Please enter a middle name',
+  ),
+};
+const hasParts = (v: { lastName?: unknown; firstName?: unknown; middleName?: unknown }) =>
+  v.lastName !== undefined || v.firstName !== undefined || v.middleName !== undefined;
+
+function refineName(fullNameKey: string) {
+  return (v: Record<string, unknown> & { lastName?: string; firstName?: string }, ctx: z.RefinementCtx) => {
+    if (hasParts(v)) {
+      if (v.lastName === undefined)
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['lastName'],
+          message: 'Please enter a last name',
+        });
+      if (v.firstName === undefined)
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['firstName'],
+          message: 'Please enter a first name',
+        });
+      return;
+    }
+    const r = personName.safeParse(v[fullNameKey] ?? '');
+    if (!r.success)
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: [fullNameKey], message: r.error.issues[0]!.message });
+  };
+}
+
+function withComposedName<T extends { lastName?: string; firstName?: string; middleName?: string }>(
+  v: T,
+  legacy: string | undefined,
+) {
+  if (v.lastName && v.firstName) {
+    const parts = { lastName: v.lastName, firstName: v.firstName, middleName: v.middleName };
+    return { ...v, fullName: composeFullName(parts), nameParts: parts };
+  }
+  return { ...v, fullName: (legacy ?? '').trim(), nameParts: undefined };
+}
 
 export const contactsSchema = z
   .object({
@@ -92,24 +150,35 @@ export const contactsSchema = z
 export type ContactsInput = z.input<typeof contactsSchema>;
 export type Contacts = z.output<typeof contactsSchema>;
 
-export const attendeeInputSchema = z.object({
-  /** Present when updating an existing attendee; absent for new attendees. */
-  publicId: publicIdSchema.optional(),
-  fullName: personName,
-  ageCategory: z.enum(AGE_CATEGORIES, { errorMap: () => ({ message: 'Choose Adult or Child' }) }),
-  rsvp: z.enum(RSVP_VALUES, { errorMap: () => ({ message: 'Choose whether this person will attend' }) }),
-  categoryId: publicIdSchema.optional().nullable(),
-});
+export const attendeeInputSchema = z
+  .object({
+    /** Present when updating an existing attendee; absent for new attendees. */
+    publicId: publicIdSchema.optional(),
+    fullName: z.string().optional(),
+    ...namePartsShape,
+    ageCategory: z.enum(AGE_CATEGORIES, { errorMap: () => ({ message: 'Choose Adult or Child' }) }),
+    rsvp: z.enum(RSVP_VALUES, { errorMap: () => ({ message: 'Choose whether this person will attend' }) }),
+    categoryId: publicIdSchema.optional().nullable(),
+  })
+  .superRefine(refineName('fullName'))
+  .transform((v) => withComposedName(v, v.fullName));
 export type AttendeeInput = z.input<typeof attendeeInputSchema>;
 
 const attendeesList = z
   .array(attendeeInputSchema)
   .max(MAX_ATTENDEES, `At most ${MAX_ATTENDEES} attendees per form`);
 
-const representativeSchema = z.object({
-  name: personName,
-  contacts: contactsSchema,
-});
+const representativeSchema = z
+  .object({
+    name: z.string().optional(),
+    ...namePartsShape,
+    contacts: contactsSchema,
+  })
+  .superRefine(refineName('name'))
+  .transform((v) => {
+    const { fullName, ...rest } = withComposedName(v, v.name);
+    return { ...rest, name: fullName };
+  });
 
 /** Zero attendees is allowed only with an explicit response (whole household not attending). */
 function requireAttendeesOrReason(

@@ -58,3 +58,26 @@ export function isAllowedMessengerUrl(input: string): boolean {
     return false;
   }
 }
+
+export interface NameParts {
+  lastName: string;
+  firstName: string;
+  middleName?: string | null;
+}
+
+/** Display form used everywhere a single name is shown: "Last, First Middle". */
+export function composeFullName(p: NameParts): string {
+  const given = [p.firstName, p.middleName ?? ''].map(cleanDisplayName).filter(Boolean).join(' ');
+  return `${cleanDisplayName(p.lastName)}, ${given}`;
+}
+
+/** Best-effort split of a legacy single-field name, for prefilling edit forms. */
+export function splitFullName(fullName: string): NameParts {
+  const name = cleanDisplayName(fullName);
+  const comma = name.indexOf(',');
+  if (comma !== -1)
+    return { lastName: name.slice(0, comma).trim(), firstName: name.slice(comma + 1).trim(), middleName: '' };
+  const words = name.split(' ');
+  if (words.length < 2) return { lastName: '', firstName: name, middleName: '' };
+  return { lastName: words.at(-1)!, firstName: words.slice(0, -1).join(' '), middleName: '' };
+}

@@ -8,6 +8,7 @@ import {
   type AttendeeDto,
   type ContactsDto,
   type CountSummary,
+  type NameParts,
   type OwnerRegistrationDto,
   type RegistrationSource,
   type registrationUpdateSchema,
@@ -38,11 +39,17 @@ type ContactsOut = {
 
 /** Shape shared by public create, staff create and updates (after Zod parsing). */
 export interface RegistrationBody {
-  representative: { name: string; contacts: ContactsOut };
+  representative: { name: string; nameParts?: NameParts; contacts: ContactsOut };
   eventCategoryId?: string | null;
-  attendees: Array<{ publicId?: string; fullName: string; ageCategory: 'adult' | 'child'; rsvp: 'confirmed' | 'tentative' | 'declined'; categoryId?: string | null }>;
+  attendees: Array<{ publicId?: string; fullName: string; nameParts?: NameParts; ageCategory: 'adult' | 'child'; rsvp: 'confirmed' | 'tentative' | 'declined'; categoryId?: string | null }>;
   noAttendeesReason?: string;
   notes?: string;
+}
+
+function cleanParts(p: NameParts | undefined) {
+  if (!p) return undefined;
+  const middleName = p.middleName ? cleanDisplayName(p.middleName) : undefined;
+  return { lastName: cleanDisplayName(p.lastName), firstName: cleanDisplayName(p.firstName), ...(middleName ? { middleName } : {}) };
 }
 
 // ---------------------------------------------------------------- registration window
@@ -147,6 +154,7 @@ export async function createRegistration(opts: CreateOptions, session: ClientSes
             eventId: event._id,
             representativeName: cleanDisplayName(body.representative.name),
             representativeNameNormalized: normalizeName(body.representative.name),
+            representativeNameParts: cleanParts(body.representative.nameParts),
             contacts,
             eventCategoryId: body.eventCategoryId ? cats.get(body.eventCategoryId) : undefined,
             noAttendeesReason: body.attendees.length === 0 ? body.noAttendeesReason : undefined,
@@ -176,6 +184,7 @@ export async function createRegistration(opts: CreateOptions, session: ClientSes
       registrationId: reg!._id,
       fullName: cleanDisplayName(a.fullName),
       normalizedName: normalizeName(a.fullName),
+      nameParts: cleanParts(a.nameParts),
       ageCategory: a.ageCategory,
       rsvp: a.rsvp,
       categoryId: a.categoryId ? cats.get(a.categoryId) : undefined,
@@ -259,6 +268,7 @@ export async function updateRegistration(opts: UpdateOptions, session: ClientSes
       $set: {
         representativeName: cleanDisplayName(body.representative.name),
         representativeNameNormalized: normalizeName(body.representative.name),
+        representativeNameParts: cleanParts(body.representative.nameParts) ?? null,
         contacts,
         eventCategoryId: body.eventCategoryId ? cats.get(body.eventCategoryId) : null,
         noAttendeesReason: body.attendees.length === 0 ? body.noAttendeesReason : null,
@@ -277,6 +287,7 @@ export async function updateRegistration(opts: UpdateOptions, session: ClientSes
     const fields = {
       fullName: cleanDisplayName(a.fullName),
       normalizedName: normalizeName(a.fullName),
+      nameParts: cleanParts(a.nameParts) ?? null,
       ageCategory: a.ageCategory,
       rsvp: a.rsvp,
       categoryId: a.categoryId ? cats.get(a.categoryId) : null,
@@ -286,7 +297,7 @@ export async function updateRegistration(opts: UpdateOptions, session: ClientSes
       keep.add(a.publicId);
       const prev = byPublicId.get(a.publicId)!;
       const differs =
-        prev.fullName !== fields.fullName || prev.ageCategory !== fields.ageCategory || prev.rsvp !== fields.rsvp ||
+        prev.fullName !== fields.fullName || !sameParts(prev.nameParts, fields.nameParts) || prev.ageCategory !== fields.ageCategory || prev.rsvp !== fields.rsvp ||
         String(prev.categoryId ?? '') !== String(fields.categoryId ?? '') || prev.sortOrder !== i;
       if (differs) {
         await Attendee.updateOne({ _id: prev._id }, { $set: fields, $inc: { revision: 1 } }, { session });
@@ -435,6 +446,16 @@ export async function flagPossibleDuplicates(event: EventDoc, reg: RegistrationD
 
 // ---------------------------------------------------------------- DTO mapping
 
+type StoredParts = { lastName: string; firstName: string; middleName?: string | null } | null | undefined;
+
+function partsDto(p: StoredParts): NameParts | null {
+  return p ? { lastName: p.lastName, firstName: p.firstName, middleName: p.middleName ?? null } : null;
+}
+
+function sameParts(a: StoredParts, b: StoredParts) {
+  return JSON.stringify(partsDto(a)) === JSON.stringify(partsDto(b));
+}
+
 export function categoryPublicIdMap(categories: CategoryDoc[]) {
   return new Map(categories.map((c) => [String(c._id), c.publicId]));
 }
@@ -443,6 +464,7 @@ export function attendeeDto(a: AttendeeDoc, catMap: Map<string, string>): Attend
   return {
     id: a.publicId,
     fullName: a.fullName,
+    nameParts: partsDto(a.nameParts),
     ageCategory: a.ageCategory,
     rsvp: a.rsvp,
     categoryId: a.categoryId ? (catMap.get(String(a.categoryId)) ?? null) : null,
@@ -467,6 +489,7 @@ function baseDto(reg: RegistrationDoc, attendees: AttendeeDoc[], catMap: Map<str
     status: reg.status,
     revision: reg.revision,
     representativeName: reg.representativeName,
+    representativeNameParts: partsDto(reg.representativeNameParts),
     contacts: contactsDto(reg.contacts),
     eventCategoryId: reg.eventCategoryId ? (catMap.get(String(reg.eventCategoryId)) ?? null) : null,
     noAttendeesReason: reg.noAttendeesReason ?? null,

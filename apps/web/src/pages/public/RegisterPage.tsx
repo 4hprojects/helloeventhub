@@ -7,10 +7,12 @@ import {
   BranchSection,
   ContactSection,
   attendeeTotals,
+  displayName,
   emptyForm,
   fieldIdFor,
   flattenErrors,
   formToBody,
+  repDisplayName,
   type Errors,
   type FormState,
 } from '../../components/RegistrationForm';
@@ -76,7 +78,9 @@ function Wizard({ event }: { event: PublicEvent }) {
   }, [step]);
 
   const dirty = Boolean(
-    state.repName.trim() ||
+    state.repLastName.trim() ||
+      state.repFirstName.trim() ||
+      state.repMiddleName.trim() ||
       state.email.trim() ||
       state.mobile.trim() ||
       state.messengerDisplayName.trim() ||
@@ -332,7 +336,7 @@ function Review({ state, event, goTo }: { state: FormState; event: PublicEvent; 
       <div className="flex items-start justify-between gap-3 py-3">
         <div className="min-w-0">
           <dt className="text-sm font-semibold text-ink-muted">Representative</dt>
-          <dd className="break-words">{state.repName}</dd>
+          <dd className="break-words">{repDisplayName(state)}</dd>
           {contacts.map((c) => (
             <dd key={c as string} className="break-words text-sm">
               {c}
@@ -358,7 +362,7 @@ function Review({ state, event, goTo }: { state: FormState; event: PublicEvent; 
               <ul className="flex flex-col gap-1">
                 {state.attendees.map((a) => (
                   <li key={a.key} className="break-words">
-                    {a.isRep ? state.repName : a.fullName} — {a.ageCategory === 'child' ? 'Child' : 'Adult'}, {a.rsvp ? RSVP_LABEL[a.rsvp] : ''}
+                    {a.isRep ? repDisplayName(state) : displayName(a)} — {a.ageCategory === 'child' ? 'Child' : 'Adult'}, {a.rsvp ? RSVP_LABEL[a.rsvp] : ''}
                   </li>
                 ))}
               </ul>

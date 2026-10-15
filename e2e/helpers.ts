@@ -38,7 +38,16 @@ export function latestMail(subjectIncludes: string, since: number): string | nul
 
 export async function fillPerson(page: Page, index: number, name: string, age: 'Adult' | 'Child', rsvp: 'Yes, attending' | 'Maybe' | 'Not attending') {
   const person = page.getByRole('listitem').filter({ hasText: `Person ${index}` });
-  await person.getByLabel('Full name').fill(name);
+  const words = name.split(' ');
+  await person.getByLabel('Last name').fill(words.at(-1)!);
+  await person.getByLabel('First name').fill(words.slice(0, -1).join(' '));
   await person.getByRole('radio', { name: age, exact: true }).check();
   await person.getByRole('radio', { name: rsvp, exact: true }).check();
+}
+
+/** Fill the representative's name fields from a "First … Last" string. */
+export async function fillRepName(page: Page, name: string) {
+  const words = name.split(' ');
+  await page.getByLabel('Your last name').fill(words.at(-1)!);
+  await page.getByLabel('Your first name').fill(words.slice(0, -1).join(' '));
 }
