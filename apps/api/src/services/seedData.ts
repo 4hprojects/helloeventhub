@@ -30,6 +30,16 @@ Your choices and rights: you may withdraw consent before the event or ask to acc
 
 Security and changes: access controls, audit records, encryption in transit, backups and limited staff access are used to protect the information. If this notice changes materially, its version will be updated and affected participants will be informed when practicable.`;
 
+/** Public config must never advertise an event that public routes cannot serve. */
+export async function assertPublishedPrimaryEvent(slug: string): Promise<void> {
+  const exists = await Event.exists({ slug, status: 'published' });
+  if (!exists) {
+    throw new Error(
+      `PRIMARY_EVENT_SLUG="${slug}" does not identify a published event. Correct the deployment configuration before starting.`,
+    );
+  }
+}
+
 /** Idempotent seed: creates the organization, first event and editable family branches if missing. */
 export async function seedPrimaryEvent() {
   const org =

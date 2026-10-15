@@ -26,6 +26,11 @@ export function useAsync<T>(fn: (signal: AbortSignal) => Promise<T>, deps: unkno
     return () => ac.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, tick]);
-  const reload = useCallback(() => setTick((t) => t + 1), []);
+  const reload = useCallback(() => {
+    // Update immediately so controls invoking reload can expose a stable busy state
+    // before the next effect begins the request.
+    setLoading(true);
+    setTick((t) => t + 1);
+  }, []);
   return { data, error, loading, reload, setData };
 }

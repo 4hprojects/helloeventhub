@@ -1,4 +1,5 @@
 import tls from 'node:tls';
+import { evaluatePrimaryEventConfig } from './release-preflight-lib.mjs';
 
 const baseUrl = new URL(process.env.BASE_URL ?? 'https://helloeventhub.online');
 const eventSlug = process.env.EVENT_SLUG ?? 'mb-wa-reunion-2026';
@@ -105,6 +106,7 @@ if (health) {
 }
 
 const config = await json('/api/v1/public-config');
+let configuredEventSlug = eventSlug;
 if (config) {
   const key = config.body.turnstileSiteKey;
   record(
@@ -118,9 +120,16 @@ if (config) {
     key ? 'configured' : 'missing',
   );
   record(config.body.timezone === 'Asia/Manila', 'Public timezone', String(config.body.timezone));
+  const primaryEvent = evaluatePrimaryEventConfig(config.body, eventSlug);
+  record(
+    primaryEvent.ok,
+    'Primary event slug',
+    primaryEvent.ok ? primaryEvent.configuredSlug : `${primaryEvent.detail}; expected ${eventSlug}`,
+  );
+  if (primaryEvent.configuredSlug) configuredEventSlug = primaryEvent.configuredSlug;
 }
 
-const event = await json(`/api/v1/events/${encodeURIComponent(eventSlug)}`);
+const event = await json(`/api/v1/events/${encodeURIComponent(configuredEventSlug)}`);
 if (event) {
   const body = event.body;
   const contact = body.contactInfo ?? {};

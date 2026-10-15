@@ -4,7 +4,7 @@ import { buildDeps } from './deps.js';
 import { createApp } from './app.js';
 import { startEmailWorker } from './services/emailOutbox.js';
 import { startScheduler } from './services/scheduler.js';
-import { seedPrimaryEvent } from './services/seedData.js';
+import { assertPublishedPrimaryEvent, seedPrimaryEvent } from './services/seedData.js';
 import mongoose from 'mongoose';
 
 const config = loadConfig();
@@ -15,6 +15,7 @@ await connectDb(config.MONGODB_URI);
 await ensureIndexes();
 logger.info({ version: config.version, env: config.NODE_ENV }, 'database connected, indexes ensured');
 const seeded = await seedPrimaryEvent();
+await assertPublishedPrimaryEvent(config.PRIMARY_EVENT_SLUG);
 logger.info(
   {
     eventSlug: seeded.event.slug,

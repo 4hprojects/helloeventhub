@@ -20,7 +20,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "npm run test --workspaces --if-present",
+    "test": "node --test scripts/release-preflight.test.mjs && npm run test --workspaces --if-present",
     "test:e2e": "playwright test",
     "test:e2e:self-contained": "node apps/api/scripts/run-e2e.mjs",
     "preflight": "node scripts/release-preflight.mjs",
