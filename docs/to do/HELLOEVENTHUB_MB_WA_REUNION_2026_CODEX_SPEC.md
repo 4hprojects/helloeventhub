@@ -85,9 +85,9 @@ These names were supplied by the organizer as the eight children and associated 
 | 1 | Albina | Baon Tinay / Magastino |
 | 2 | Magdalena | Palaez Mat-an |
 | 3 | Mary | Francisco Marino |
-| 4 | Toribio | Virginia Villanueva |
-| 5 | Ganzon | Pilar Licdan |
-| 6 | Onofre | Belen Wagsi |
+| 4 | Ganzon | Pilar Licdan |
+| 5 | Onofre | Belen Wagsi |
+| 6 | Toribio | Virginia Villanueva |
 | 7 | Mistihil | Zenaida Calado |
 | 8 | Denio | Pacita Guzman |
 
@@ -96,9 +96,9 @@ These names were supplied by the organizer as the eight children and associated 
   {"order":1,"name":"Albina","associatedNames":["Baon Tinay","Magastino"]},
   {"order":2,"name":"Magdalena","associatedNames":["Palaez Mat-an"]},
   {"order":3,"name":"Mary","associatedNames":["Francisco Marino"]},
-  {"order":4,"name":"Toribio","associatedNames":["Virginia Villanueva"]},
-  {"order":5,"name":"Ganzon","associatedNames":["Pilar Licdan"]},
-  {"order":6,"name":"Onofre","associatedNames":["Belen Wagsi"]},
+  {"order":4,"name":"Ganzon","associatedNames":["Pilar Licdan"]},
+  {"order":5,"name":"Onofre","associatedNames":["Belen Wagsi"]},
+  {"order":6,"name":"Toribio","associatedNames":["Virginia Villanueva"]},
   {"order":7,"name":"Mistihil","associatedNames":["Zenaida Calado"]},
   {"order":8,"name":"Denio","associatedNames":["Pacita Guzman"]}
 ]

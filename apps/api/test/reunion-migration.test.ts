@@ -22,6 +22,19 @@ describe('2026 reunion migration', () => {
     oldMagdalena!.label = '2. Magdalena — Palag Mat-an';
     oldMagdalena!.labelNormalized = normalizeName(oldMagdalena!.label);
     await oldMagdalena!.save();
+    const previousOrder = [
+      '4. Toribio — Virginia Villanueva',
+      '5. Ganzon — Pilar Licdan',
+      '6. Onofre — Belen Wagsi',
+    ];
+    const oldOrderIds: Record<string, string> = {};
+    const oldOrder = await EventCategory.find({ eventId: event!._id }).sort({ sortOrder: 1 }).skip(3).limit(3);
+    for (const [index, category] of oldOrder.entries()) {
+      category.label = previousOrder[index]!;
+      category.labelNormalized = normalizeName(category.label);
+      await category.save();
+      oldOrderIds[category.label.split(' ')[1]!] = String(category._id);
+    }
     const secondary = await EventCategory.create({
       organizationId: event!.organizationId,
       eventId: event!._id,
@@ -66,6 +79,9 @@ describe('2026 reunion migration', () => {
     const categories = await EventCategory.find({ eventId: event!._id }).sort({ sortOrder: 1 }).lean();
     expect(categories.map((category) => category.label)).toEqual(FAMILY_BRANCHES);
     expect(await EventCategory.countDocuments({ _id: secondary._id })).toBe(0);
+    expect(String(categories[3]!._id)).toBe(oldOrderIds.Ganzon);
+    expect(String(categories[4]!._id)).toBe(oldOrderIds.Onofre);
+    expect(String(categories[5]!._id)).toBe(oldOrderIds.Toribio);
     const validIds = new Set(categories.map((category) => String(category._id)));
     expect(
       (await Registration.find({ eventId: event!._id }).lean()).every(

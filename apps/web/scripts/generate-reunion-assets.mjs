@@ -24,9 +24,9 @@ const branches = [
   ['Albina', 'Baon Tinay / Magastino'],
   ['Magdalena', 'Palaez Mat-an'],
   ['Mary', 'Francisco Marino'],
-  ['Toribio', 'Virginia Villanueva'],
   ['Ganzon', 'Pilar Licdan'],
   ['Onofre', 'Belen Wagsi'],
+  ['Toribio', 'Virginia Villanueva'],
   ['Mistihil', 'Zenaida Calado'],
   ['Denio', 'Pacita Guzman'],
 ];
