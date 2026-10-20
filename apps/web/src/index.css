@@ -35,7 +35,7 @@
   --color-gold-soft: #fff3c9;
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-display: 'Plus Jakarta Sans Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
-  --radius-card: 12px;
+  --radius-card: 16px;
 }
 
 /* Base element styles live in the base layer so utility classes (e.g. text-white on a link) win. */
