@@ -220,7 +220,12 @@ function Wizard({ event }: { event: PublicEvent }) {
         }}
       >
         <Card>
-          {step === 0 && <ContactSection state={state} setState={setState} errors={errors} />}
+          {step === 0 && (
+            <>
+              <AlreadyRegistered className="mb-4" />
+              <ContactSection state={state} setState={setState} errors={errors} />
+            </>
+          )}
           {step === 1 && <BranchSection state={state} setState={setState} errors={errors} categories={event.categories} />}
           {step === 2 && <AttendeesSection state={state} setState={setState} errors={errors} allowRepToggle ageNote={event.ageCategoryNote} />}
           {step === 3 && (
@@ -239,6 +244,7 @@ function Wizard({ event }: { event: PublicEvent }) {
                   </Link>
                 </p>
               </details>
+              <AlreadyRegistered />
               <Checkbox
                 id="accept-privacy"
                 checked={accepted}
@@ -279,6 +285,19 @@ function Wizard({ event }: { event: PublicEvent }) {
         <LeaveRegistrationDialog onStay={() => blocker.reset()} onLeave={() => blocker.proceed()} />
       )}
     </div>
+  );
+}
+
+// Same wording whatever was entered: never hint whether these details are already registered.
+function AlreadyRegistered({ className = '' }: { className?: string }) {
+  return (
+    <p className={`text-sm text-ink-muted ${className}`}>
+      Already registered?{' '}
+      <Link to="/registration/manage" className="font-semibold">
+        Get a link to view or change it
+      </Link>{' '}
+      instead of registering again.
+    </p>
   );
 }
 

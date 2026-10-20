@@ -15,6 +15,8 @@ export interface TemplateInput {
   registration: RegistrationDoc;
   attendees: AttendeeDoc[];
   manageToken?: string;
+  /** Earlier active registrations for the same event that use this email address. */
+  otherReferences?: string[];
 }
 
 const BRAND = '#397FAF';
@@ -66,6 +68,11 @@ export function renderEmail(input: TemplateInput): { subject: string; html: stri
       break;
   }
 
+  const others = input.otherReferences ?? [];
+  const otherNote = others.length
+    ? `This email address is also on ${others.length === 1 ? 'registration' : 'registrations'} ${others.join(', ')}. If you registered twice by mistake, use "Manage registration" on the event site or contact the organizers so no one is counted twice.`
+    : null;
+
   const contact = event.contactInfo ?? {};
   const contactLines = [
     contact.email && `Email: ${contact.email}`,
@@ -93,6 +100,7 @@ export function renderEmail(input: TemplateInput): { subject: string; html: stri
         ]
       : []),
     ...(cta ? [`${cta.label}: ${cta.href}`, ''] : []),
+    ...(otherNote ? [otherNote, ''] : []),
     'Keep your reference number. It identifies your registration but is not a password.',
     ...(contactLines.length ? ['', 'Questions? Contact the organizers:', ...contactLines] : []),
     '',
@@ -128,6 +136,7 @@ export function renderEmail(input: TemplateInput): { subject: string; html: stri
       <p style="margin:0 0 4px">On-site registration ${e(onsite)} · Program ${e(program)}</p>
       ${event.venueName ? `<p style="margin:0 0 4px">${e(event.venueName)}${event.venueAddress ? `, ${e(event.venueAddress)}` : ''}</p>` : ''}
       ${summaryHtml}${ctaHtml}
+      ${otherNote ? `<p style="margin:0 0 16px;padding:12px;border-radius:10px;background:#FFF6E5">${e(otherNote)}</p>` : ''}
       <p style="font-size:13px;color:#4A5B70">Keep your reference number. It identifies your registration but is not a password.</p>
       ${contactLines.length ? `<p style="font-size:13px;color:#4A5B70">Questions? ${contactLines.map(e).join(' · ')}</p>` : ''}
       <p style="font-size:12px;color:#4A5B70"><a href="${e(appBaseUrl)}/privacy" style="color:${BRAND}">Privacy notice</a> · HelloEventHub — Plan. Register. Connect.</p>
