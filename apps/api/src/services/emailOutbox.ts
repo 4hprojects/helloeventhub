@@ -92,7 +92,24 @@ export async function processEmailBatch(deps: WorkerDeps, batch = 10): Promise<n
         await EmailJob.updateOne({ _id: job._id }, { $set: { status: 'suppressed', lastErrorCode: 'secret_missing' }, $unset: { lockedUntil: 1 } });
         continue;
       }
-      const msg = renderEmail({ type: job.type, appBaseUrl: deps.appBaseUrl, event, registration: reg, attendees, manageToken });
+      // Only the inbox owner sees this, so naming their earlier registrations reveals nothing to the submitter.
+      const otherReferences =
+        job.type === 'registration_confirmation' && reg.contacts?.emailNormalized
+          ? (
+              await Registration.find({
+                eventId: reg.eventId,
+                status: 'active',
+                _id: { $ne: reg._id },
+                createdAt: { $lt: reg.createdAt },
+                'contacts.emailNormalized': reg.contacts.emailNormalized,
+              })
+                .sort({ createdAt: 1 })
+                .limit(5)
+                .select('reference')
+                .lean()
+            ).map((r) => r.reference)
+          : [];
+      const msg = renderEmail({ type: job.type, appBaseUrl: deps.appBaseUrl, event, registration: reg, attendees, manageToken, otherReferences });
       const { id } = await deps.transport.send({ to: job.recipient, ...msg, idempotencyKey: job.dedupeKey });
       await EmailJob.updateOne(
         { _id: job._id },

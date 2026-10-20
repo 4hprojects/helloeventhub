@@ -76,4 +76,18 @@ describe('email outbox', () => {
     expect(sent[0]!.text).not.toContain('Little Kid');
     expect(sent[0]!.text).toContain('Children: 1');
   });
+
+  it('tells the email owner about their earlier registrations, and the API response does not', async () => {
+    const contacts = { email: 'twice@example.test', preferred: 'email' };
+    const first = await submit(ctx, registrationPayload({ representative: { name: 'Twice Registered', contacts } })).expect(201);
+    const sent: OutgoingEmail[] = [];
+    const capture: EmailTransport = { send: async (m) => (sent.push(m), { id: '1' }) };
+    await run(capture);
+    expect(sent[0]!.text).not.toContain('also on registration');
+    const second = await submit(ctx, registrationPayload({ representative: { name: 'Twice Registered', contacts } })).expect(201);
+    expect(JSON.stringify(second.body)).not.toContain(first.body.reference);
+    await run(capture);
+    expect(sent[1]!.text).toContain(`also on registration ${first.body.reference}`);
+    expect(sent[1]!.html).toContain(first.body.reference);
+  });
 });
