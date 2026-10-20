@@ -47,7 +47,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLBut
 );
 
 export function Card({ children, className, as: As = 'section' }: { children: ReactNode; className?: string; as?: 'section' | 'div' | 'article' }) {
-  return <As className={cx('rounded-[var(--radius-card)] border border-line bg-white p-4 sm:p-6 shadow-[0_1px_2px_rgba(36,51,72,0.06)]', className)}>{children}</As>;
+  return (
+    <As className={cx('rounded-[var(--radius-card)] border border-line bg-white p-4 sm:p-6 shadow-[0_1px_2px_rgba(36,51,72,0.05),0_8px_24px_-12px_rgba(36,51,72,0.12)]', className)}>
+      {children}
+    </As>
+  );
 }
 
 const alertStyles = {
@@ -80,6 +84,10 @@ interface FieldProps {
   id?: string;
 }
 
+/**
+ * Label, control, then one reserved message line under it (Hello family pattern): the hint, or
+ * the error in its place. Reserving the line keeps the layout still when an error appears.
+ */
 function FieldShell({ label, hint, error, required, optional, id, children }: FieldProps & { id: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -87,30 +95,36 @@ function FieldShell({ label, hint, error, required, optional, id, children }: Fi
         {label}
         {required ? <span className="text-danger" aria-hidden="true"> *</span> : optional ? <span className="font-normal text-ink-muted"> (optional)</span> : null}
       </label>
-      {hint && (
-        <p id={`${id}-hint`} className="text-sm text-ink-muted">
-          {hint}
-        </p>
-      )}
       {children}
-      {error && (
-        <p id={`${id}-error`} className="flex items-start gap-1 text-sm font-medium text-danger">
-          <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
-          {error}
-        </p>
-      )}
+      <div className="min-h-5 text-sm">
+        {error ? (
+          <p id={`${id}-error`} className="flex items-start gap-1 font-medium text-danger">
+            <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+            {error}
+          </p>
+        ) : (
+          hint && (
+            <p id={`${id}-hint`} className="text-ink-muted">
+              {hint}
+            </p>
+          )
+        )}
+      </div>
     </div>
   );
 }
 
-const inputCls = (error?: string) =>
+/** Required fields that have a value get a quiet brand border: silent progress down the form. */
+const inputCls = (error?: string, filled?: boolean) =>
   cx(
     'w-full min-h-12 rounded-[10px] border bg-white px-3 text-base text-ink placeholder:text-ink-muted/70',
-    error ? 'border-danger ring-1 ring-danger' : 'border-field hover:border-brand-strong',
+    error ? 'border-danger ring-1 ring-danger' : filled ? 'border-brand hover:border-brand-strong' : 'border-field hover:border-brand-strong',
   );
 
+const isFilled = (required?: boolean, value?: unknown) => !!required && typeof value === 'string' && value.trim() !== '';
+
 function describedBy(id: string, hint?: ReactNode, error?: string) {
-  return [hint ? `${id}-hint` : '', error ? `${id}-error` : ''].filter(Boolean).join(' ') || undefined;
+  return error ? `${id}-error` : hint ? `${id}-hint` : undefined;
 }
 
 export function TextField({ label, hint, error, required, optional, id, className, ...rest }: FieldProps & InputHTMLAttributes<HTMLInputElement>) {
@@ -118,7 +132,7 @@ export function TextField({ label, hint, error, required, optional, id, classNam
   const fid = id ?? auto;
   return (
     <FieldShell label={label} hint={hint} error={error} required={required} optional={optional} id={fid}>
-      <input id={fid} className={cx(inputCls(error), className)} aria-invalid={!!error || undefined} aria-describedby={describedBy(fid, hint, error)} required={required} {...rest} />
+      <input id={fid} className={cx(inputCls(error, isFilled(required, rest.value)), className)} aria-invalid={!!error || undefined} aria-describedby={describedBy(fid, hint, error)} required={required} {...rest} />
     </FieldShell>
   );
 }
@@ -158,7 +172,7 @@ export function TextArea({ label, hint, error, required, optional, id, ...rest }
   const fid = id ?? auto;
   return (
     <FieldShell label={label} hint={hint} error={error} required={required} optional={optional} id={fid}>
-      <textarea id={fid} className={cx(inputCls(error), 'min-h-24 py-2')} aria-invalid={!!error || undefined} aria-describedby={describedBy(fid, hint, error)} required={required} {...rest} />
+      <textarea id={fid} className={cx(inputCls(error, isFilled(required, rest.value)), 'min-h-24 py-2')} aria-invalid={!!error || undefined} aria-describedby={describedBy(fid, hint, error)} required={required} {...rest} />
     </FieldShell>
   );
 }
@@ -168,7 +182,7 @@ export function SelectField({ label, hint, error, required, optional, id, childr
   const fid = id ?? auto;
   return (
     <FieldShell label={label} hint={hint} error={error} required={required} optional={optional} id={fid}>
-      <select id={fid} className={inputCls(error)} aria-invalid={!!error || undefined} aria-describedby={describedBy(fid, hint, error)} required={required} {...rest}>
+      <select id={fid} className={inputCls(error, isFilled(required, rest.value))} aria-invalid={!!error || undefined} aria-describedby={describedBy(fid, hint, error)} required={required} {...rest}>
         {children}
       </select>
     </FieldShell>
@@ -181,7 +195,7 @@ export function Checkbox({ label, hint, error, id, ...rest }: { label: ReactNode
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-start gap-3">
-        <input id={fid} type="checkbox" className="mt-1 size-5 shrink-0 accent-[var(--color-brand-strong)]" aria-invalid={!!error || undefined} aria-describedby={describedBy(fid, hint, error)} {...rest} />
+        <input id={fid} type="checkbox" className="mt-1 size-5 shrink-0 accent-[var(--color-brand-strong)]" aria-invalid={!!error || undefined} aria-describedby={[hint ? `${fid}-hint` : '', error ? `${fid}-error` : ''].filter(Boolean).join(' ') || undefined} {...rest} />
         <label htmlFor={fid} className="text-base text-ink">
           {label}
         </label>

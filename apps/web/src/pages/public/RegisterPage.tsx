@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Pencil } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Pencil } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useBeforeUnload, useBlocker, useNavigate, useParams } from 'react-router-dom';
 import { registrationCreateSchema, type PublicEvent, type RegistrationCreatedResponse } from '@heh/contracts';
@@ -192,24 +192,38 @@ function Wizard({ event }: { event: PublicEvent }) {
   return (
     <div className="flex flex-col gap-4" id="form-top">
       <div>
-        <p className="text-sm font-medium text-ink-muted">{event.title}</p>
-        <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold outline-none sm:text-3xl">
+        <p className="text-[0.72rem] font-bold uppercase tracking-[0.08em] text-brand-deep">{event.title}</p>
+        <h1 ref={headingRef} tabIndex={-1} className="mt-1 text-2xl font-bold outline-none sm:text-3xl">
           {STEPS[step]}
         </h1>
         <p className="mt-1 text-sm text-ink-muted" aria-live="polite">
           Step {step + 1} of {STEPS.length}
         </p>
         <nav aria-label="Registration progress">
-          <ol className="mt-2 grid grid-cols-4 gap-1">
-            {STEP_SHORT.map((label, i) => (
-              <li key={label} className="min-w-0" aria-current={i === step ? 'step' : undefined}>
-                <div className={`h-1.5 rounded-full ${i <= step ? 'bg-brand-strong' : 'bg-line'}`} aria-hidden />
-                <span className={`mt-1 block truncate text-xs ${i === step ? 'font-semibold text-brand-deep' : 'text-ink-muted'}`}>
-                  {i === step && <span className="sr-only">Current step: </span>}
-                  {label}
-                </span>
-              </li>
-            ))}
+          <ol className="mt-3 grid grid-cols-4">
+            {STEP_SHORT.map((label, i) => {
+              const done = i < step;
+              const current = i === step;
+              return (
+                <li key={label} className="relative flex min-w-0 flex-col items-center gap-1 text-center" aria-current={current ? 'step' : undefined}>
+                  {/* Track joining this step to the previous one. */}
+                  {i > 0 && <span className={`absolute top-4 right-1/2 h-0.5 w-full -translate-y-1/2 ${i <= step ? 'bg-brand-strong' : 'bg-line'}`} aria-hidden />}
+                  <span
+                    className={`relative z-10 grid size-8 place-items-center rounded-full border-2 text-sm font-bold ${
+                      current ? 'border-brand-strong bg-brand-strong text-white' : done ? 'border-brand-strong bg-brand-ice text-brand-deep' : 'border-field bg-white text-ink-muted'
+                    }`}
+                    aria-hidden
+                  >
+                    {done ? <Check className="size-4" strokeWidth={3} /> : i + 1}
+                  </span>
+                  <span className={`block max-w-full truncate text-xs ${current ? 'font-semibold text-brand-deep' : 'text-ink-muted'}`}>
+                    {current && <span className="sr-only">Current step: </span>}
+                    {done && <span className="sr-only">Completed: </span>}
+                    {label}
+                  </span>
+                </li>
+              );
+            })}
           </ol>
         </nav>
       </div>
