@@ -9,7 +9,7 @@ Show verified working title, location when organizer confirms it, Oct 24 date, 8
 ## Responsive registration steps
 1. **Representative:** last name, first name and optional middle name (shown as "Last, First Middle"), at least one of email/PH mobile/Messenger. Preferred channel. Accessible labels and examples. For Messenger use user-supplied display name or profile URL; do not pretend Meta account is verified.
 2. **Family classification:** select one of the organizer-supplied numbered branch/couple labels or Other/Unsure; organizer can change labels in admin configuration.
-3. **Attendees:** add/remove arbitrary people, last/first/optional middle name, adult/child, per-person RSVP confirmed/tentative/declined. Option to explicitly add representative to attendees (unchecked default). If all household members decline, permit zero expected attendees with explicit reason/response.
+3. **Attendees:** add/remove arbitrary people, last/first/optional middle name, adult/child, per-person RSVP confirmed/tentative/declined. The representative explicitly answers "Are you attending too?" (no pre-selected answer); they are counted only if they answer yes. If all household members decline, permit zero expected attendees with explicit reason/response.
 4. **Review and consent:** display names, statuses, count and privacy link; make invalid fields obvious; provide edit navigation.
 5. **Success:** reference, per-status totals, clear message about email only if email supplied, screenshot/print option. Warn that reference alone is not a private-management credential.
 

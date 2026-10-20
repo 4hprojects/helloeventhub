@@ -29,6 +29,8 @@ export interface FormState {
   noneAttending: boolean;
   noAttendeesReason: string;
   notes: string;
+  /** Public wizard only: the representative's explicit answer to "Are you attending too?". */
+  repAnswer?: 'yes' | 'no';
 }
 
 let seq = 0;
@@ -145,6 +147,7 @@ export function fieldIdFor(path: string, s: FormState): string {
     eventCategoryId: 'branch',
     attendees: 'attendees',
     noAttendeesReason: 'none-reason',
+    repAttending: 'rep-attends',
     acceptedPrivacy: 'accept-privacy',
     consentExplained: 'consent-explained',
     notes: 'notes',
@@ -301,9 +304,10 @@ export function AttendeesSection({
   setState,
   errors,
   allowRepToggle,
+  askRepAttending,
   ageNote,
   perAttendeeCategories,
-}: SectionProps & { allowRepToggle?: boolean; ageNote?: string; perAttendeeCategories?: PublicCategory[] }) {
+}: SectionProps & { allowRepToggle?: boolean; askRepAttending?: boolean; ageNote?: string; perAttendeeCategories?: PublicCategory[] }) {
   const rows = state.attendees;
   const repRow = rows.find((r) => r.isRep);
   const update = (key: string, patch: Partial<AttendeeRow>) => setState((s) => ({ ...s, attendees: s.attendees.map((a) => (a.key === key ? { ...a, ...patch } : a)) }));
@@ -317,14 +321,35 @@ export function AttendeesSection({
     setState((s) => ({
       ...s,
       noneAttending: on ? false : s.noneAttending,
-      attendees: on ? [{ key: 'rep', isRep: true, lastName: '', firstName: '', middleName: '', ageCategory: 'adult', rsvp: 'confirmed' }, ...s.attendees] : s.attendees.filter((a) => !a.isRep),
+      attendees: on
+        ? s.attendees.some((a) => a.isRep)
+          ? s.attendees
+          : [{ key: 'rep', isRep: true, lastName: '', firstName: '', middleName: '', ageCategory: 'adult', rsvp: 'confirmed' }, ...s.attendees]
+        : s.attendees.filter((a) => !a.isRep),
     }));
   const errIdx = (i: number, f: string) => errors[`attendees.${i}.${f}`];
   const repName = repDisplayName(state);
   return (
     <div id="attendees" tabIndex={-1} className="flex flex-col gap-4">
       {ageNote && <p className="text-sm text-ink-muted">{ageNote}</p>}
-      {allowRepToggle && (
+      {askRepAttending && (
+        <RadioGroup
+          id="rep-attends"
+          legend={repName ? `Are you (${repName}) attending too?` : 'Are you attending too?'}
+          name="rep-attends"
+          value={repRow ? 'yes' : (state.repAnswer ?? '')}
+          options={[
+            { value: 'yes', label: 'Yes, count me', hint: "You'll be added as Person 1." },
+            { value: 'no', label: "No, I'm only registering others", hint: 'You will not be counted in the headcount.' },
+          ]}
+          onChange={(v) => {
+            toggleRep(v === 'yes');
+            setState((s) => ({ ...s, repAnswer: v }));
+          }}
+          error={errors.repAttending}
+        />
+      )}
+      {allowRepToggle && !askRepAttending && (
         <Checkbox
           id="rep-attends"
           checked={!!repRow}

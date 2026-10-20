@@ -138,7 +138,7 @@ function Staff() {
                   </label>
                   <select
                     id={`role-${s.id}`}
-                    className="min-h-10 rounded-[10px] border border-[#A9BCCB] bg-white px-2 text-sm"
+                    className="min-h-10 rounded-[10px] border border-field bg-white px-2 text-sm"
                     value={s.role}
                     onChange={(e) => run(() => api(`${base}/${s.id}`, { method: 'PATCH', body: { role: e.target.value } }), `${s.name} is now ${ROLE_LABEL[e.target.value as keyof typeof ROLE_LABEL]}.`)}
                   >

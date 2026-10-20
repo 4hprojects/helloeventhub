@@ -16,12 +16,16 @@
   --color-ink-muted: #4a5b70;
   --color-canvas: #f7fafd;
   --color-line: #d9e6f0;
+  /* Input and choice-card borders. */
+  --color-field: #a9bccb;
+  --color-neutral-bg: #eef2f6;
   --color-success: #067647;
   --color-success-bg: #ecfdf3;
   --color-warning: #b54708;
   --color-warning-bg: #fffaeb;
   --color-danger: #b42318;
   --color-danger-bg: #fef3f2;
+  --color-danger-deep: #912018;
   --color-heritage: #22633f;
   --color-heritage-deep: #123f2a;
   --color-heritage-soft: #e9f1e7;

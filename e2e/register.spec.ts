@@ -35,11 +35,13 @@ test.describe('public registration (mobile)', () => {
     await page.getByLabel('Family branch').selectOption({ label: '6. Toribio — Virginia Villanueva' });
     await page.getByRole('button', { name: 'Continue' }).click();
 
-    // Step 3: rep not attending by default; add 4 people
+    // Step 3: the representative must say whether they attend; nothing is pre-selected
     await expect(page.getByRole('heading', { name: 'Who is coming' })).toBeVisible();
-    await expect(page.getByLabel(/am also attending/)).not.toBeChecked();
+    await expect(page.getByRole('radio', { name: /Yes, count me/ })).not.toBeChecked();
     await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.getByText('Please tell us whether you are attending too.').first()).toBeVisible();
     await expect(page.getByText('Add at least one attendee').first()).toBeVisible();
+    await page.getByRole('radio', { name: /No, I'm only registering others/ }).check();
     for (let i = 1; i <= 4; i++) await page.getByRole('button', { name: /Add (a|another) person/ }).click();
     await fillPerson(page, 1, 'E2E Lola Uno', 'Adult', 'Yes, attending');
     await fillPerson(page, 2, 'E2E Tito Dos', 'Adult', 'Maybe');
@@ -69,6 +71,7 @@ test.describe('public registration (mobile)', () => {
     await page.getByRole('radio', { name: 'Messenger' }).check();
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByRole('radio', { name: /No, I'm only registering others/ }).check();
     for (let i = 1; i <= 20; i++) {
       await page.getByRole('button', { name: /Add (a|another) person/ }).click();
       const person = page.getByRole('listitem').filter({ hasText: `Person ${i}` });
@@ -124,7 +127,7 @@ test.describe('public registration (mobile)', () => {
     await page.getByRole('radio', { name: 'Email' }).check();
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByRole('button', { name: 'Continue' }).click();
-    await page.getByLabel(/am also attending/).check();
+    await page.getByRole('radio', { name: /Yes, count me/ }).check();
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByLabel(/I have read the privacy notice/).check();
     await page.getByRole('button', { name: 'Submit registration' }).click();

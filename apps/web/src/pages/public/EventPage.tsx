@@ -5,6 +5,7 @@ import { Alert, Card, Spinner } from '../../components/ui';
 import { PublicEventShare, ShareEventButton } from '../../components/EventSharing';
 import { useEventMetadata } from '../../lib/eventMetadata';
 import { usePublicEvent } from '../../lib/publicData';
+import { formatDeadline } from '../../lib/time';
 import { EventFacts } from './EventDetails';
 import { ContactInfo } from './ContactPage';
 
@@ -197,15 +198,6 @@ function EventContent({ event }: { event: PublicEvent }) {
       </p>
     </article>
   );
-}
-
-function formatDeadline(date: string) {
-  return new Intl.DateTimeFormat('en-PH', {
-    timeZone: 'UTC',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(new Date(`${date}T00:00:00Z`));
 }
 
 const icsDate = (iso: string) =>

@@ -20,11 +20,12 @@ import { Turnstile, type TurnstileHandle } from '../../components/Turnstile';
 import { Alert, Button, Card, Checkbox, ErrorSummary, RSVP_LABEL, Spinner } from '../../components/ui';
 import type { ApiError} from '../../lib/api';
 import { api, newIdempotencyKey } from '../../lib/api';
+import { formatDeadline } from '../../lib/time';
 import { usePublicConfig, usePublicEvent } from '../../lib/publicData';
 
 const STEPS = ['Your details', 'Family branch', 'Who is coming', 'Review & submit'] as const;
 const STEP_SHORT = ['Details', 'Branch', 'People', 'Review'] as const;
-const STEP_PREFIXES: string[][] = [['representative'], ['eventCategoryId'], ['attendees', 'noAttendeesReason'], ['acceptedPrivacy', 'consentVersion']];
+const STEP_PREFIXES: string[][] = [['representative'], ['eventCategoryId'], ['repAttending', 'attendees', 'noAttendeesReason'], ['acceptedPrivacy', 'consentVersion']];
 
 function stepOf(path: string): number {
   const i = STEP_PREFIXES.findIndex((ps) => ps.some((p) => path === p || path.startsWith(`${p}.`)));
@@ -65,6 +66,8 @@ function Wizard({ event }: { event: PublicEvent }) {
   // One key per form session: retries after network errors replay safely instead of duplicating.
   const idemKey = useRef(newIdempotencyKey());
   const firstRender = useRef(true);
+  const hasErrors = useRef(false);
+  hasErrors.current = Object.keys(errors).length > 0;
 
   const setState = (u: (s: FormState) => FormState) => setStateRaw(u);
 
@@ -73,8 +76,9 @@ function Wizard({ event }: { event: PublicEvent }) {
       firstRender.current = false;
       return;
     }
-    headingRef.current?.focus();
     window.scrollTo({ top: 0 });
+    // After a jump caused by errors, the error summary takes focus instead of the heading.
+    if (!hasErrors.current) headingRef.current?.focus();
   }, [step]);
 
   const dirty = Boolean(
@@ -89,6 +93,7 @@ function Wizard({ event }: { event: PublicEvent }) {
       state.attendees.length ||
       state.noneAttending ||
       state.noAttendeesReason.trim() ||
+      state.repAnswer ||
       accepted,
   );
   const blocker = useBlocker(({ currentLocation, nextLocation }) =>
@@ -109,9 +114,13 @@ function Wizard({ event }: { event: PublicEvent }) {
   const validateStep = (s: number): Errors => {
     // Object-level refinements only run once every field parses, so treat later-step
     // fields as valid while checking an earlier step.
-    const r = registrationCreateSchema.safeParse({ ...body(), ...(s < 3 ? { acceptedPrivacy: true } : {}) });
-    if (r.success) return {};
     const out: Errors = {};
+    // Client-only question: the server just sees whether the representative is listed.
+    if (s === 2 && !state.repAnswer && !state.attendees.some((a) => a.isRep)) {
+      out.repAttending = 'Please tell us whether you are attending too.';
+    }
+    const r = registrationCreateSchema.safeParse({ ...body(), ...(s < 3 ? { acceptedPrivacy: true } : {}) });
+    if (r.success) return out;
     for (const issue of r.error.issues) {
       const path = issue.path.join('.');
       if (stepOf(path) === s && !out[path]) out[path] = issue.message;
@@ -126,6 +135,7 @@ function Wizard({ event }: { event: PublicEvent }) {
   };
 
   const submit = async () => {
+    if (submitting) return;
     setFormError(null);
     for (let s = 0; s < 4; s++) {
       const errs = validateStep(s);
@@ -204,6 +214,14 @@ function Wizard({ event }: { event: PublicEvent }) {
         </nav>
       </div>
 
+      {event.lateRegistration && step === 0 && (
+        <Alert tone="warning" title="Late registration">
+          {event.preregistrationDeadlineDate
+            ? `Online preregistration closed on ${formatDeadline(event.preregistrationDeadlineDate)}. `
+            : 'The planning headcount has been taken. '}
+          You can still register: your entry will be marked late, and walk-ins are welcome on the day.
+        </Alert>
+      )}
       <ErrorSummary errors={errorList} />
       {formError && (
         <Alert tone="error" title={formError.title}>
@@ -227,7 +245,7 @@ function Wizard({ event }: { event: PublicEvent }) {
             </>
           )}
           {step === 1 && <BranchSection state={state} setState={setState} errors={errors} categories={event.categories} />}
-          {step === 2 && <AttendeesSection state={state} setState={setState} errors={errors} allowRepToggle ageNote={event.ageCategoryNote} />}
+          {step === 2 && <AttendeesSection state={state} setState={setState} errors={errors} askRepAttending ageNote={event.ageCategoryNote} />}
           {step === 3 && (
             <div className="flex flex-col gap-5">
               <Review state={state} event={event} goTo={setStep} />
