@@ -34,7 +34,7 @@ test('public pages pass automated WCAG AA checks', async ({ page }) => {
   await page.getByRole('button', { name: 'Continue' }).click();
   await expectNoViolations(page, 'step 2');
   await page.getByRole('button', { name: 'Continue' }).click();
-  await page.getByLabel(/am also attending/).check();
+  await page.getByRole('radio', { name: /Yes, count me/ }).check();
   await page.getByRole('button', { name: /Add another person/ }).click();
   await expectNoViolations(page, 'step 3');
   for (const path of ['/privacy', '/contact', '/registration/manage']) {

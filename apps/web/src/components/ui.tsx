@@ -21,7 +21,7 @@ const variants: Record<Variant, string> = {
   primary: 'bg-brand-strong text-white hover:bg-brand-deep disabled:bg-brand-strong/60',
   secondary: 'bg-white text-brand-deep border border-line hover:bg-brand-ice disabled:opacity-60',
   ghost: 'bg-transparent text-brand-deep hover:bg-brand-ice disabled:opacity-60',
-  danger: 'bg-danger text-white hover:bg-[#912018] disabled:opacity-60',
+  danger: 'bg-danger text-white hover:bg-danger-deep disabled:opacity-60',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; loading?: boolean; size?: 'md' | 'sm' }>(
@@ -106,7 +106,7 @@ function FieldShell({ label, hint, error, required, optional, id, children }: Fi
 const inputCls = (error?: string) =>
   cx(
     'w-full min-h-12 rounded-[10px] border bg-white px-3 text-base text-ink placeholder:text-ink-muted/70',
-    error ? 'border-danger ring-1 ring-danger' : 'border-[#A9BCCB] hover:border-brand-strong',
+    error ? 'border-danger ring-1 ring-danger' : 'border-field hover:border-brand-strong',
   );
 
 function describedBy(id: string, hint?: ReactNode, error?: string) {
@@ -200,7 +200,10 @@ export function Checkbox({ label, hint, error, id, ...rest }: { label: ReactNode
   );
 }
 
-/** Segmented radio group with visible text labels (status is never color-only). */
+/**
+ * Radio choices as selectable cards (Hello family pattern). Text labels are always visible, so
+ * status is never color-only. Pass per-option hints for choices that need a consequence explained.
+ */
 export function RadioGroup<T extends string>({
   legend,
   name,
@@ -213,32 +216,53 @@ export function RadioGroup<T extends string>({
   legend: string;
   name: string;
   value: T | '';
-  options: Array<{ value: T; label: string }>;
+  options: Array<{ value: T; label: string; hint?: string }>;
   onChange: (v: T) => void;
   error?: string;
   id?: string;
 }) {
+  const auto = useId();
+  const gid = id ?? auto;
+  const withHints = options.some((o) => o.hint);
   return (
-    <fieldset id={id} className="min-w-0">
+    <fieldset id={gid} tabIndex={-1} className="min-w-0 outline-none" aria-describedby={error ? `${gid}-error` : undefined}>
       <legend className="mb-1.5 text-sm font-semibold text-ink">{legend}</legend>
-      <div className="flex flex-wrap gap-2">
+      <div className={withHints ? 'grid gap-2 sm:grid-cols-2' : 'flex flex-wrap gap-2'}>
         {options.map((o) => {
           const checked = value === o.value;
           return (
             <label
               key={o.value}
               className={cx(
-                'flex min-h-11 cursor-pointer items-center gap-2 rounded-[10px] border px-3 text-sm font-medium',
-                checked ? 'border-brand-strong bg-brand-ice text-brand-deep ring-1 ring-brand-strong' : 'border-[#A9BCCB] bg-white text-ink hover:border-brand-strong',
+                'flex min-h-12 cursor-pointer gap-2.5 rounded-xl border px-3 text-sm transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand-strong',
+                withHints ? 'items-start py-3' : 'items-center',
+                checked
+                  ? 'border-brand-strong bg-brand-ice text-brand-deep ring-1 ring-brand-strong'
+                  : cx('bg-white text-ink hover:border-brand-strong', error ? 'border-danger' : 'border-field'),
               )}
             >
-              <input type="radio" className="size-4 accent-[var(--color-brand-strong)]" name={name} value={o.value} checked={checked} onChange={() => onChange(o.value)} />
-              {o.label}
+              <input
+                type="radio"
+                className={cx('size-4 shrink-0 accent-[var(--color-brand-strong)]', withHints && 'mt-0.5')}
+                name={name}
+                value={o.value}
+                checked={checked}
+                onChange={() => onChange(o.value)}
+              />
+              <span className="min-w-0">
+                <span className="block font-semibold">{o.label}</span>
+                {o.hint && <span className="mt-0.5 block font-normal text-ink-muted">{o.hint}</span>}
+              </span>
             </label>
           );
         })}
       </div>
-      {error && <p className="mt-1 text-sm font-medium text-danger">{error}</p>}
+      {error && (
+        <p id={`${gid}-error`} className="mt-1.5 flex items-start gap-1 text-sm font-medium text-danger">
+          <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+          {error}
+        </p>
+      )}
     </fieldset>
   );
 }
@@ -252,7 +276,7 @@ export function Spinner({ label = 'Loading…' }: { label?: string }) {
 }
 
 const badgeTones = {
-  neutral: 'bg-[#EEF2F6] text-ink',
+  neutral: 'bg-neutral-bg text-ink',
   brand: 'bg-brand-ice text-brand-deep',
   success: 'bg-success-bg text-success',
   warning: 'bg-warning-bg text-warning',

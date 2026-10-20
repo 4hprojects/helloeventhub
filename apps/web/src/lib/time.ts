@@ -29,3 +29,13 @@ export function fromZonedInput(local: string, timeZone: string): string | null {
   const offset = zoneOffsetMinutes(guess, timeZone);
   return new Date(guess.getTime() - offset * 60000).toISOString();
 }
+
+/** A calendar date with no time ("2026-10-20" -> "October 20, 2026"); never invents a cutoff hour. */
+export function formatDeadline(date: string) {
+  return new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date(`${date}T00:00:00Z`));
+}
