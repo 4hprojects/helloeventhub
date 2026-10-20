@@ -16,6 +16,8 @@ export const REUNION_EVENT_VALUES = {
   onsiteRegistrationStartsAt: new Date('2026-10-24T08:00:00+08:00'),
   timezone: 'Asia/Manila',
   preregistrationDeadlineDate: '2026-10-20',
+  // End of the deadline day: later registrations are marked late and the headcount snapshot is taken.
+  preregSnapshotAt: new Date('2026-10-20T23:59:00+08:00'),
   registrationClosesAt: null,
   allowLateRegistration: true,
 } as const;

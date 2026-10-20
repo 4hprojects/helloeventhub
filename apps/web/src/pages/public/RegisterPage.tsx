@@ -89,7 +89,6 @@ function Wizard({ event }: { event: PublicEvent }) {
       state.attendees.length ||
       state.noneAttending ||
       state.noAttendeesReason.trim() ||
-      state.notes.trim() ||
       accepted,
   );
   const blocker = useBlocker(({ currentLocation, nextLocation }) =>
@@ -147,18 +146,16 @@ function Wizard({ event }: { event: PublicEvent }) {
         body: body(),
         headers: { 'Idempotency-Key': idemKey.current },
       });
+      const saved = { ...res, eventSlug: event.slug, eventTitle: event.title };
       try {
-        sessionStorage.setItem(
-          LAST_REG_KEY,
-          JSON.stringify({ ...res, hasEmail: !!state.email.trim(), eventSlug: event.slug, eventTitle: event.title }),
-        );
+        sessionStorage.setItem(LAST_REG_KEY, JSON.stringify(saved));
       } catch {
         /* storage unavailable: success page falls back to router state */
       }
       idemKey.current = newIdempotencyKey();
       allowNavigation.current = true;
       setStateRaw(emptyForm());
-      navigate('/registration/success', { state: { ...res, hasEmail: !!state.email.trim(), eventSlug: event.slug, eventTitle: event.title } });
+      navigate('/registration/success', { state: saved });
     } catch (e) {
       const err = e as ApiError;
       if (err.isNetwork) {

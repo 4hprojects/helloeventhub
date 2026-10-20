@@ -234,10 +234,32 @@ describe('POST /events/:id/registrations', () => {
     await submit(ctx, one).expect(201);
     await submit(ctx, two).expect(201);
     await new Promise((r) => setTimeout(r, 200));
-    const flag = await DuplicateFlag.findOne({ matchKey: 'name:jose dupli cate' }).lean();
+    const flag = await DuplicateFlag.findOne({ matchKey: 'name:cate dupli jose' }).lean();
     expect(flag?.status).toBe('open');
     expect(flag?.attendeeIds).toHaveLength(2);
     expect(await Attendee.countDocuments({ normalizedName: 'jose dupli cate', status: 'active' })).toBe(2);
+  });
+
+  it('flags names entered in a different order or without a middle name', async () => {
+    const first = registrationPayload({
+      attendees: [{ fullName: 'Ordertest, Juanito Bautista', ageCategory: 'adult', rsvp: 'confirmed' }],
+    });
+    const reordered = registrationPayload({
+      attendees: [{ fullName: 'Juanito Bautista Ordertest', ageCategory: 'adult', rsvp: 'confirmed' }],
+    });
+    const noMiddle = registrationPayload({
+      attendees: [{ fullName: 'Juanito Ordertest', ageCategory: 'adult', rsvp: 'confirmed' }],
+    });
+    await submit(ctx, first).expect(201);
+    await new Promise((r) => setTimeout(r, 200));
+    await submit(ctx, reordered).expect(201);
+    await new Promise((r) => setTimeout(r, 200));
+    await submit(ctx, noMiddle).expect(201);
+    await new Promise((r) => setTimeout(r, 200));
+    const reorderFlag = await DuplicateFlag.findOne({ matchKey: 'name:bautista juanito ordertest' }).lean();
+    expect(reorderFlag?.attendeeIds).toHaveLength(2);
+    const middleFlag = await DuplicateFlag.findOne({ matchKey: 'name:juanito ordertest' }).lean();
+    expect(middleFlag?.attendeeIds).toHaveLength(3);
   });
 
   it('rejects oversized and malformed bodies', async () => {
