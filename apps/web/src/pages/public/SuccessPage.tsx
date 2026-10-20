@@ -4,7 +4,8 @@ import type { RegistrationCreatedResponse } from '@heh/contracts';
 import { Alert, Button, Card } from '../../components/ui';
 import { LAST_REG_KEY } from './RegisterPage';
 
-type Saved = RegistrationCreatedResponse & { hasEmail: boolean; eventSlug: string; eventTitle: string };
+// `hasEmail` came from older pages that guessed from the form; the server's flag is authoritative.
+type Saved = RegistrationCreatedResponse & { hasEmail?: boolean; eventSlug: string; eventTitle: string };
 
 function load(stateFromRouter: unknown): Saved | null {
   if (stateFromRouter && typeof stateFromRouter === 'object' && 'reference' in stateFromRouter) return stateFromRouter as Saved;
@@ -27,6 +28,7 @@ export default function SuccessPage() {
     );
   }
   const s = saved.countSummary;
+  const emailSent = saved.confirmationEmailQueued ?? saved.hasEmail ?? false;
   return (
     <div className="flex flex-col gap-5">
       <div className="text-center">
@@ -60,7 +62,7 @@ export default function SuccessPage() {
           </Alert>
         )}
       </Card>
-      {saved.hasEmail ? (
+      {emailSent ? (
         <Alert tone="info" title="Check your email">
           We're sending a confirmation to the email address you gave. It may take a few minutes — check your spam folder too.
         </Alert>

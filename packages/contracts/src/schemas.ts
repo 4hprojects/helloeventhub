@@ -17,7 +17,7 @@ export const publicIdSchema = z.string().regex(/^[0-9A-HJKMNP-TV-Z]{26}$/, 'Inva
 const personName = z
   .string()
   .trim()
-  .min(2, 'Please enter a full name')
+  .min(2, 'Please enter a name')
   .max(120, 'Name is too long')
   .refine((v) => /\p{L}/u.test(v), 'Please enter a name');
 

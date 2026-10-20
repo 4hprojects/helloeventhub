@@ -1,6 +1,8 @@
 import type { ClientSession, Types } from 'mongoose';
 import {
   cleanDisplayName,
+  nameTokens,
+  namesLikelySame,
   normalizeEmail,
   normalizeName,
   normalizePhMobile,
@@ -305,7 +307,7 @@ export async function updateRegistration(opts: UpdateOptions, session: ClientSes
       }
     } else {
       await Attendee.create(
-        [{ ...fields, organizationId: event.organizationId, eventId: event._id, registrationId: current._id, registrationActive: true }],
+        [{ ...fields, organizationId: event.organizationId, eventId: event._id, registrationId: current._id, registrationActive: true, walkIn: current.source === 'venue' }],
         { session },
       );
       changes.added! += 1;
@@ -409,28 +411,31 @@ async function upsertFlag(
   );
 }
 
-/** Flag possible duplicates by normalized attendee name and by shared contact. Best-effort, after commit. */
+/**
+ * Flag possible duplicates by attendee name (same words in any order, or one name contained in the
+ * other, e.g. "Dela Cruz, Juan" vs. "Juan Dela Cruz") and by shared contact. Best-effort, after commit.
+ */
 export async function flagPossibleDuplicates(event: EventDoc, reg: RegistrationDoc, attendees: AttendeeDoc[]) {
-  for (const a of attendees) {
-    if (a.status !== 'active') continue;
-    const matches = await Attendee.find({
-      eventId: event._id,
-      normalizedName: a.normalizedName,
-      status: 'active',
-      registrationActive: true,
-      registrationId: { $ne: reg._id },
-    })
-      .select('_id registrationId')
-      .limit(50)
-      .lean();
-    if (matches.length === 0) continue;
-    await upsertFlag(
-      event,
-      `name:${a.normalizedName}`,
-      'same_attendee_name',
-      [a._id, ...matches.map((m) => m._id)],
-      [reg._id, ...matches.map((m) => m.registrationId)],
-    );
+  const mine = attendees.filter((a) => a.status === 'active');
+  if (mine.length) {
+    // Events are a few hundred people, so comparing in memory is cheap and needs no extra index.
+    const others = (
+      await Attendee.find({ eventId: event._id, status: 'active', registrationActive: true, registrationId: { $ne: reg._id } })
+        .select('_id registrationId normalizedName')
+        .lean()
+    ).map((o) => ({ ...o, tokens: nameTokens(o.normalizedName) }));
+    for (const a of mine) {
+      const tokens = nameTokens(a.normalizedName);
+      const matches = others.filter((o) => namesLikelySame(tokens, o.tokens)).slice(0, 50);
+      if (matches.length === 0) continue;
+      await upsertFlag(
+        event,
+        `name:${tokens.join(' ')}`,
+        'same_attendee_name',
+        [a._id, ...matches.map((m) => m._id)],
+        [reg._id, ...matches.map((m) => m.registrationId)],
+      );
+    }
   }
   const contactKeys: Array<[string, string, Record<string, unknown>]> = [];
   if (reg.contacts?.emailNormalized) contactKeys.push([`email:${reg.contacts.emailNormalized}`, 'same_contact_email', { 'contacts.emailNormalized': reg.contacts.emailNormalized }]);

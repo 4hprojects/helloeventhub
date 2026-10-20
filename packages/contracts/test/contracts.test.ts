@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   contactsSchema,
   isAllowedMessengerUrl,
+  nameTokens,
+  namesLikelySame,
   normalizeName,
   normalizePhMobile,
   registrationCreateSchema,
@@ -22,6 +24,20 @@ describe('normalizePhMobile', () => {
 describe('normalizeName', () => {
   it('folds case, accents and punctuation', () => {
     expect(normalizeName('  José  Dela-Cruz Jr. ')).toBe('jose dela cruz jr');
+  });
+});
+
+describe('namesLikelySame', () => {
+  const same = (a: string, b: string) => namesLikelySame(nameTokens(a), nameTokens(b));
+  it('ignores word order and the comma form', () => {
+    expect(same('Dela Cruz, Juan', 'Juan Dela Cruz')).toBe(true);
+  });
+  it('matches a name missing its middle name', () => {
+    expect(same('Cruz, Juan Santos', 'Juan Cruz')).toBe(true);
+  });
+  it('does not match on a single shared word or different names', () => {
+    expect(same('Juan', 'Juan Cruz')).toBe(false);
+    expect(same('Maria Cruz', 'Juan Cruz')).toBe(false);
   });
 });
 

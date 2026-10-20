@@ -81,3 +81,21 @@ export function splitFullName(fullName: string): NameParts {
   if (words.length < 2) return { lastName: '', firstName: name, middleName: '' };
   return { lastName: words.at(-1)!, firstName: words.slice(0, -1).join(' '), middleName: '' };
 }
+
+/** Sorted, de-duplicated name words, so "Dela Cruz, Juan" and "Juan Dela Cruz" compare equal. */
+export function nameTokens(input: string): string[] {
+  return [...new Set(normalizeName(input).split(' ').filter(Boolean))].sort();
+}
+
+/**
+ * Possible-duplicate test for duplicate flags: same words in any order, or one name of at least
+ * two words contained in the other (e.g. a missing middle name). Never used to merge records.
+ */
+export function namesLikelySame(a: string[], b: string[]): boolean {
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  if (short.length === 0) return false;
+  if (short.length === long.length) return short.every((t, i) => t === long[i]);
+  if (short.length < 2) return false;
+  const set = new Set(long);
+  return short.every((t) => set.has(t));
+}
