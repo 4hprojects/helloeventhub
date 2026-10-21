@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { normalizeName } from '@heh/contracts';
 import { Attendee, Event, EventCategory, Registration } from '../src/db/models.js';
-import { migrateReunionEvent, REUNION_EVENT_VALUES } from '../src/services/reunionMigration.js';
+import { migrateReunionEvent, REUNION_DEFAULT_IF_MISSING, REUNION_EVENT_VALUES } from '../src/services/reunionMigration.js';
 import { FAMILY_BRANCHES } from '../src/services/seedData.js';
 import { registrationPayload, setupTestApp, submit, teardownTestApp, type TestCtx } from './helpers.js';
 
@@ -65,9 +65,24 @@ describe('2026 reunion migration', () => {
       attendees: await Attendee.countDocuments({ eventId: event!._id }),
     };
 
+    // A cutoff that is already set in production must survive the migration.
+    const existingCutoff = new Date('2026-10-18T23:59:00+08:00');
+    await Event.updateOne({ _id: event!._id }, { $set: { title: 'Old title', venueName: null, preregSnapshotAt: existingCutoff } });
+
     const preview = await migrateReunionEvent();
     expect(preview.dryRun).toBe(true);
     expect(preview.categoriesMerged).toBe(1);
+    expect(preview.eventFieldChanges).toEqual(
+      expect.arrayContaining([
+        { field: 'title', from: 'Old title', to: REUNION_EVENT_VALUES.title, action: 'set' },
+        { field: 'venueName', from: null, to: 'Veterans Building', action: 'set' },
+        { field: 'preregSnapshotAt', from: existingCutoff, to: existingCutoff, action: 'kept' },
+      ]),
+    );
+    expect(preview.branchLabelChanges).toEqual(
+      expect.arrayContaining([{ from: '4. Toribio — Virginia Villanueva', to: '6. Toribio — Virginia Villanueva' }]),
+    );
+    expect((await Event.findById(event!._id).lean())!.title).toBe('Old title');
     expect(await EventCategory.countDocuments({ _id: secondary._id })).toBe(1);
 
     const applied = await migrateReunionEvent({ dryRun: false });
@@ -76,6 +91,7 @@ describe('2026 reunion migration', () => {
     expect(await Event.countDocuments({ slug: ctx.eventSlug })).toBe(before.events);
     const updated = await Event.findById(event!._id).lean();
     expect(updated).toMatchObject(REUNION_EVENT_VALUES);
+    expect(updated!.preregSnapshotAt).toEqual(existingCutoff);
     const categories = await EventCategory.find({ eventId: event!._id }).sort({ sortOrder: 1 }).lean();
     expect(categories.map((category) => category.label)).toEqual(FAMILY_BRANCHES);
     expect(await EventCategory.countDocuments({ _id: secondary._id })).toBe(0);
@@ -97,6 +113,22 @@ describe('2026 reunion migration', () => {
     const repeat = await migrateReunionEvent({ dryRun: false });
     expect(repeat.categoriesMerged).toBe(0);
     expect(repeat.categoriesCreated).toBe(0);
+    expect(repeat.eventFieldChanges.filter((c) => c.action === 'set')).toEqual([]);
+    expect(repeat.branchLabelChanges).toEqual([]);
     expect(await Event.countDocuments({ slug: ctx.eventSlug })).toBe(1);
+  });
+
+  it('sets the default cutoff only when the event has none', async () => {
+    await Event.updateOne({ publicId: ctx.eventId }, { $unset: { preregSnapshotAt: 1 } });
+    const preview = await migrateReunionEvent();
+    expect(preview.eventFieldChanges).toContainEqual({
+      field: 'preregSnapshotAt',
+      from: null,
+      to: REUNION_DEFAULT_IF_MISSING.preregSnapshotAt,
+      action: 'set',
+    });
+    await migrateReunionEvent({ dryRun: false });
+    const updated = await Event.findOne({ publicId: ctx.eventId }).lean();
+    expect(updated!.preregSnapshotAt).toEqual(REUNION_DEFAULT_IF_MISSING.preregSnapshotAt);
   });
 });

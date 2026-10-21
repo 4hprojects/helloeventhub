@@ -16,11 +16,25 @@ export const REUNION_EVENT_VALUES = {
   onsiteRegistrationStartsAt: new Date('2026-10-24T08:00:00+08:00'),
   timezone: 'Asia/Manila',
   preregistrationDeadlineDate: '2026-10-20',
-  // End of the deadline day: later registrations are marked late and the headcount snapshot is taken.
-  preregSnapshotAt: new Date('2026-10-20T23:59:00+08:00'),
   registrationClosesAt: null,
   allowLateRegistration: true,
 } as const;
+
+/**
+ * Set only when the event has no value. An existing cutoff is kept: moving it would shift which
+ * registrations count as late and trigger a second automatic headcount snapshot.
+ */
+export const REUNION_DEFAULT_IF_MISSING = {
+  // End of the deadline day in Manila.
+  preregSnapshotAt: new Date('2026-10-20T23:59:00+08:00'),
+} as const;
+
+export interface EventFieldChange {
+  field: string;
+  from: unknown;
+  to: unknown;
+  action: 'set' | 'kept';
+}
 
 const aliases: string[][] = [
   ['1a. Albin – Baon Tinay', '1b. Albin – Magastino', 'Albina', '2b. Albin – Magastino'],
@@ -50,6 +64,10 @@ export interface ReunionMigrationReport {
   attendeeReferencesRemapped: number;
   categoriesMerged: number;
   categoriesCreated: number;
+  /** Event fields the apply step sets, plus defaults it keeps because a value already exists. */
+  eventFieldChanges: EventFieldChange[];
+  /** Branch relabels and reorders, as "old label" -> "new label". */
+  branchLabelChanges: Array<{ from: string; to: string }>;
   registrationsAfter: number;
   attendeesAfter: number;
 }
@@ -69,6 +87,25 @@ export async function migrateReunionEvent({
   const categories = await EventCategory.find({ eventId: event._id }).sort({ sortOrder: 1 });
   const byNormalized = new Map(categories.map((category) => [category.labelNormalized, category]));
 
+  const eventFieldChanges: EventFieldChange[] = [];
+  const eventSet: Record<string, unknown> = {};
+  for (const [field, to] of Object.entries(REUNION_EVENT_VALUES)) {
+    const from = event.get(field);
+    if (sameValue(from, to)) continue;
+    eventFieldChanges.push({ field, from: from ?? null, to, action: 'set' });
+    eventSet[field] = to;
+  }
+  for (const [field, to] of Object.entries(REUNION_DEFAULT_IF_MISSING)) {
+    const from = event.get(field);
+    if (from == null) {
+      eventFieldChanges.push({ field, from: null, to, action: 'set' });
+      eventSet[field] = to;
+    } else if (!sameValue(from, to)) {
+      eventFieldChanges.push({ field, from, to: from, action: 'kept' });
+    }
+  }
+  const branchLabelChanges: Array<{ from: string; to: string }> = [];
+
   let householdReferencesRemapped = 0;
   let attendeeReferencesRemapped = 0;
   let categoriesMerged = 0;
@@ -83,6 +120,7 @@ export async function migrateReunionEvent({
         matches.push(category);
     }
     if (!matches.length) categoriesCreated += 1;
+    for (const match of matches) if (match.label !== desired) branchLabelChanges.push({ from: match.label, to: desired });
     if (matches.length > 1) {
       const extras = matches.slice(1);
       categoriesMerged += extras.length;
@@ -101,12 +139,8 @@ export async function migrateReunionEvent({
 
   if (!dryRun) {
     await withTransaction(async (session) => {
-      if (Object.entries(REUNION_EVENT_VALUES).some(([key, value]) => !sameValue(event.get(key), value))) {
-        await Event.updateOne(
-          { _id: event._id },
-          { $set: REUNION_EVENT_VALUES, $inc: { revision: 1 } },
-          { session },
-        );
+      if (Object.keys(eventSet).length) {
+        await Event.updateOne({ _id: event._id }, { $set: eventSet, $inc: { revision: 1 } }, { session });
       }
 
       for (const [index, desired] of FAMILY_BRANCHES.entries()) {
@@ -184,6 +218,8 @@ export async function migrateReunionEvent({
     attendeeReferencesRemapped,
     categoriesMerged,
     categoriesCreated,
+    eventFieldChanges,
+    branchLabelChanges,
     registrationsAfter,
     attendeesAfter,
   };

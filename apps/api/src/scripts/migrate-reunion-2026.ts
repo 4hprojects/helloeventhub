@@ -18,8 +18,15 @@ const config = loadConfig();
 await connectDb(config.MONGODB_URI);
 try {
   const report = await migrateReunionEvent({ dryRun });
+  const { eventFieldChanges, branchLabelChanges, ...counts } = report;
+  const show = (v: unknown) => (v instanceof Date ? v.toISOString() : v);
   console.log(dryRun ? 'DRY RUN — nothing changed' : 'APPLIED');
-  console.table(report);
+  console.table(counts);
+  console.log(`Event fields (${eventFieldChanges.length}):`);
+  if (eventFieldChanges.length)
+    console.table(eventFieldChanges.map((c) => ({ field: c.field, action: c.action, from: show(c.from), to: show(c.to) })));
+  console.log(`Branch labels (${branchLabelChanges.length}):`);
+  if (branchLabelChanges.length) console.table(branchLabelChanges);
 } finally {
   await mongoose.disconnect();
 }
