@@ -279,6 +279,18 @@ export const adminRegistrationQuerySchema = z.object({
 });
 export type AdminRegistrationQuery = z.input<typeof adminRegistrationQuerySchema>;
 
+export const adminAttendeeQuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  categoryId: z.union([publicIdSchema, z.literal('none')]).optional(),
+  rsvp: z.enum(RSVP_VALUES).optional(),
+  ageCategory: z.enum(AGE_CATEGORIES).optional(),
+  status: z.enum(['active', 'cancelled', 'all']).default('active'),
+  sort: z.enum(['fullName', '-fullName', 'household', 'branch', 'createdAt', '-createdAt']).default('fullName'),
+  page: z.coerce.number().int().min(1).max(10_000).default(1),
+  limit: z.coerce.number().int().min(1).max(500).default(50),
+});
+export type AdminAttendeeQuery = z.input<typeof adminAttendeeQuerySchema>;
+
 const isoDateTime = z.string().datetime({ offset: true });
 
 export const eventUpdateSchema = z.object({

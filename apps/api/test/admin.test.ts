@@ -227,6 +227,50 @@ describe('registration search and editing', () => {
     expect(ok.body.items).toHaveLength(1);
   });
 
+  it('lists the people on each household and totals the whole filter, not just the page', async () => {
+    const { a } = await agent(ctx, 'committee@example.test');
+    const base = `/api/v1/admin/events/${ctx.eventId}/registrations`;
+    const all = (await a.get(base).query({ limit: 100 }).expect(200)).body;
+    const hit = all.items.find((i: { reference: string }) => i.reference === reference);
+    expect(hit.people).toEqual([{ fullName: 'Findme Attendee', ageCategory: 'adult', rsvp: 'confirmed' }]);
+    const people = all.items.flatMap((i: { people: unknown[] }) => i.people);
+    expect(all.summary.households).toBe(all.total);
+    expect(all.summary.people).toBe(people.length);
+    expect(all.summary.confirmed + all.summary.tentative + all.summary.declined).toBe(people.length);
+    expect(all.summary.adults + all.summary.children).toBe(people.length);
+    const paged = (await a.get(base).query({ limit: 1 }).expect(200)).body;
+    expect(paged.items).toHaveLength(1);
+    expect(paged.summary).toEqual(all.summary);
+  });
+
+  it('lists every person with filters, sorting and totals', async () => {
+    const { a } = await agent(ctx, 'committee@example.test');
+    const base = `/api/v1/admin/events/${ctx.eventId}/attendees`;
+    const all = (await a.get(base).query({ limit: 500 }).expect(200)).body;
+    expect(all.total).toBe(all.items.length);
+    expect(all.summary.people).toBe(all.total);
+    const names = all.items.map((i: { fullName: string }) => i.fullName.toLowerCase());
+    expect(names).toEqual([...names].sort((x, y) => x.localeCompare(y)));
+    const me = all.items.find((i: { fullName: string }) => i.fullName === 'Findme Attendee');
+    expect(me).toMatchObject({ reference, registrationId: regId, representativeName: 'Searchable Rep', ageCategory: 'adult' });
+
+    const byName = (await a.get(base).query({ q: 'findme' }).expect(200)).body;
+    expect(byName.items.map((i: { fullName: string }) => i.fullName)).toEqual(['Findme Attendee']);
+    expect(byName.summary).toMatchObject({ households: 1, people: 1, adults: 1 });
+    const byRef = (await a.get(base).query({ q: reference }).expect(200)).body;
+    expect(byRef.items.every((i: { reference: string }) => i.reference === reference)).toBe(true);
+
+    const children = (await a.get(base).query({ ageCategory: 'child', limit: 500 }).expect(200)).body;
+    expect(children.total).toBe(all.summary.children);
+    expect(children.items.every((i: { ageCategory: string }) => i.ageCategory === 'child')).toBe(true);
+    const maybe = (await a.get(base).query({ rsvp: 'tentative', limit: 500 }).expect(200)).body;
+    expect(maybe.total).toBe(all.summary.tentative);
+
+    await a.get(base).query({ q: 'x' }).expect(422);
+    await a.get(base).query({ sort: 'contacts.email' }).expect(422);
+    await a.get(`/api/v1/admin/events/${ctx.otherEventId}/attendees`).expect(404);
+  });
+
   it('staff can edit contacts; changes are audited with history', async () => {
     const { a, csrf } = await agent(ctx, 'committee@example.test');
     const url = `/api/v1/admin/events/${ctx.eventId}/registrations/${regId}`;

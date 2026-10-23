@@ -137,6 +137,44 @@ export interface AdminRegistrationListItem {
   source: RegistrationSource;
   createdAt: string;
   matchedAttendees?: string[];
+  /** Everyone listed on the form, in form order. */
+  people: Array<{ fullName: string; ageCategory: AgeCategory; rsvp: Rsvp }>;
+}
+
+/** Totals across every row matching the current filters, not just the current page. */
+export interface SignupSummary {
+  households: number;
+  people: number;
+  confirmed: number;
+  tentative: number;
+  declined: number;
+  adults: number;
+  children: number;
+}
+
+export interface AdminRegistrationList extends Paginated<AdminRegistrationListItem> {
+  summary: SignupSummary;
+}
+
+export interface AdminAttendeeListItem {
+  id: string;
+  fullName: string;
+  ageCategory: AgeCategory;
+  rsvp: Rsvp;
+  /** Attendee branch, falling back to the household branch. */
+  branchLabel: string | null;
+  registrationId: string;
+  reference: string;
+  representativeName: string;
+  registrationStatus: RegistrationStatus;
+  lateRegistration: boolean;
+  walkIn: boolean;
+  checkedInAt: string | null;
+  registeredAt: string;
+}
+
+export interface AdminAttendeeList extends Paginated<AdminAttendeeListItem> {
+  summary: SignupSummary;
 }
 
 export interface Paginated<T> {

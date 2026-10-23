@@ -1,6 +1,7 @@
 import { Router, type Request } from 'express';
 import type { Types } from 'mongoose';
 import {
+  adminAttendeeQuerySchema,
   adminRegistrationCreateSchema,
   adminRegistrationQuerySchema,
   categoryCreateSchema,
@@ -12,10 +13,13 @@ import {
   registrationUpdateSchema,
   eventUpdateSchema,
   type AdminEventDto,
+  type AdminAttendeeList,
+  type AdminAttendeeListItem,
   type AdminEventSummary,
+  type AdminRegistrationList,
   type AdminRegistrationListItem,
   type DashboardDto,
-  type Paginated,
+  type SignupSummary,
 } from '@heh/contracts';
 import type { AppDeps } from '../app-deps.js';
 import { withTransaction } from '../db/connect.js';
@@ -54,6 +58,16 @@ export function actorOf(req: Request): Actor {
 
 export function ev(req: Request): EventDoc {
   return req.eventAccess!.event;
+}
+
+/** Totals for a set of attendees (callers pass active attendees only). */
+export function signupSummary(households: number, people: Array<{ rsvp: string; ageCategory: string }>): SignupSummary {
+  const s: SignupSummary = { households, people: people.length, confirmed: 0, tentative: 0, declined: 0, adults: 0, children: 0 };
+  for (const p of people) {
+    if (p.rsvp === 'confirmed' || p.rsvp === 'tentative' || p.rsvp === 'declined') s[p.rsvp] += 1;
+    s[p.ageCategory === 'child' ? 'children' : 'adults'] += 1;
+  }
+  return s;
 }
 
 export async function loadRegistration(req: Request) {
@@ -452,8 +466,8 @@ export function adminRoutes(deps: AppDeps): Router {
           : 1,
         _id: 1,
       };
-      const [total, regs, categories] = await Promise.all([
-        Registration.countDocuments(filter),
+      const [allIds, regs, categories] = await Promise.all([
+        Registration.distinct('_id', filter),
         Registration.find(filter)
           .sort(sort)
           .skip((q.page - 1) * q.limit)
@@ -461,16 +475,19 @@ export function adminRoutes(deps: AppDeps): Router {
           .lean(),
         EventCategory.find({ eventId: event._id }).lean(),
       ]);
+      const total = allIds.length;
       const catLabel = new Map(categories.map((c) => [String(c._id), c.label]));
-      const attendees = await Attendee.find({
-        registrationId: { $in: regs.map((x) => x._id) },
-        status: 'active',
-      })
-        .select('registrationId rsvp')
+      const pageIds = new Set(regs.map((x) => String(x._id)));
+      // One pass over every matching household: totals for the whole filter, people for this page.
+      const attendees = await Attendee.find({ registrationId: { $in: allIds }, status: 'active' })
+        .select('registrationId fullName ageCategory rsvp sortOrder')
+        .sort({ sortOrder: 1 })
         .lean();
-      const byReg = new Map<string, { rsvp: string }[]>();
-      for (const a of attendees)
-        byReg.set(String(a.registrationId), [...(byReg.get(String(a.registrationId)) ?? []), a]);
+      const byReg = new Map<string, typeof attendees>();
+      for (const a of attendees) {
+        const k = String(a.registrationId);
+        if (pageIds.has(k)) byReg.set(k, [...(byReg.get(k) ?? []), a]);
+      }
       const items: AdminRegistrationListItem[] = regs.map((x) => {
         const s = countSummary(byReg.get(String(x._id)) ?? []);
         return {
@@ -490,9 +507,128 @@ export function adminRoutes(deps: AppDeps): Router {
           ...(matchedByReg.has(String(x._id))
             ? { matchedAttendees: matchedByReg.get(String(x._id))!.slice(0, 5) }
             : {}),
+          people: (byReg.get(String(x._id)) ?? []).map((a) => ({
+            fullName: a.fullName,
+            ageCategory: a.ageCategory,
+            rsvp: a.rsvp,
+          })),
         };
       });
-      const body: Paginated<AdminRegistrationListItem> = { items, page: q.page, limit: q.limit, total };
+      const body: AdminRegistrationList = {
+        items,
+        page: q.page,
+        limit: q.limit,
+        total,
+        summary: signupSummary(total, attendees),
+      };
+      res.set('Cache-Control', 'no-store').json(body);
+    }),
+  );
+
+  // One row per person across all households. Event rosters are a few hundred people, so filter,
+  // sort and total in memory; that keeps the branch fallback identical to exports and headcount.
+  r.get(
+    '/events/:eventId/attendees',
+    committee,
+    ah(async (req, res) => {
+      const event = ev(req);
+      const q = parse(adminAttendeeQuerySchema, req.query);
+      const regFilter: Record<string, unknown> = { eventId: event._id };
+      if (q.status !== 'all') regFilter.status = q.status;
+      const [regs, categories] = await Promise.all([
+        Registration.find(regFilter)
+          .select('publicId reference representativeName status lateRegistration eventCategoryId createdAt')
+          .lean(),
+        EventCategory.find({ eventId: event._id }).sort({ sortOrder: 1 }).lean(),
+      ]);
+      const regById = new Map(regs.map((x) => [String(x._id), x]));
+      const catLabel = new Map(categories.map((c) => [String(c._id), c.label]));
+      const catOrder = new Map(categories.map((c, i) => [String(c._id), i]));
+      const attFilter: Record<string, unknown> = {
+        eventId: event._id,
+        status: 'active',
+        registrationId: { $in: regs.map((x) => x._id) },
+      };
+      if (q.rsvp) attFilter.rsvp = q.rsvp;
+      if (q.ageCategory) attFilter.ageCategory = q.ageCategory;
+      if (q.q) {
+        const upper = q.q.toUpperCase();
+        if (/^HEH-[0-9A-Z]{1,8}$/.test(upper)) {
+          attFilter.registrationId = {
+            $in: regs.filter((x) => x.reference.startsWith(upper)).map((x) => x._id),
+          };
+        } else {
+          const n = normalizeName(q.q);
+          if (n.length < 2)
+            throw new HttpError(422, 'validation_failed', 'Search term too short', {
+              q: ['Type at least 2 letters'],
+            });
+          attFilter.normalizedName = { $regex: escapeRegex(n) };
+        }
+      }
+      const found = await Attendee.find(attFilter)
+        .select('publicId registrationId fullName normalizedName ageCategory rsvp categoryId walkIn checkedInAt sortOrder')
+        .lean();
+      const branchOf = (a: (typeof found)[number]) => {
+        const c = a.categoryId ?? regById.get(String(a.registrationId))?.eventCategoryId;
+        return c ? String(c) : null;
+      };
+      let wantCat: string | null | undefined;
+      if (q.categoryId === 'none') wantCat = null;
+      else if (q.categoryId) {
+        const cat = categories.find((c) => c.publicId === q.categoryId);
+        wantCat = cat ? String(cat._id) : 'missing';
+      }
+      const rows = wantCat === undefined ? found : found.filter((a) => branchOf(a) === wantCat);
+
+      const reg = (a: (typeof rows)[number]) => regById.get(String(a.registrationId))!;
+      const byName = (a: (typeof rows)[number], b: (typeof rows)[number]) =>
+        a.normalizedName.localeCompare(b.normalizedName);
+      const byHousehold = (a: (typeof rows)[number], b: (typeof rows)[number]) =>
+        reg(a).representativeName.localeCompare(reg(b).representativeName) ||
+        String(a.registrationId).localeCompare(String(b.registrationId)) ||
+        (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+      const branchRank = (a: (typeof rows)[number]) => {
+        const c = branchOf(a);
+        return c === null ? Number.MAX_SAFE_INTEGER : (catOrder.get(c) ?? Number.MAX_SAFE_INTEGER - 1);
+      };
+      const compare: Record<typeof q.sort, (a: (typeof rows)[number], b: (typeof rows)[number]) => number> = {
+        fullName: byName,
+        '-fullName': (a, b) => byName(b, a),
+        household: byHousehold,
+        branch: (a, b) => branchRank(a) - branchRank(b) || byHousehold(a, b),
+        createdAt: (a, b) => reg(a).createdAt.getTime() - reg(b).createdAt.getTime() || byHousehold(a, b),
+        '-createdAt': (a, b) => reg(b).createdAt.getTime() - reg(a).createdAt.getTime() || byHousehold(a, b),
+      };
+      rows.sort(compare[q.sort]);
+
+      const items: AdminAttendeeListItem[] = rows.slice((q.page - 1) * q.limit, q.page * q.limit).map((a) => {
+        const x = reg(a);
+        const cat = branchOf(a);
+        return {
+          id: a.publicId,
+          fullName: a.fullName,
+          ageCategory: a.ageCategory,
+          rsvp: a.rsvp,
+          branchLabel: cat ? (catLabel.get(cat) ?? null) : null,
+          registrationId: x.publicId,
+          reference: x.reference,
+          representativeName: x.representativeName,
+          registrationStatus: x.status,
+          lateRegistration: x.lateRegistration,
+          walkIn: !!a.walkIn,
+          checkedInAt: a.checkedInAt ? a.checkedInAt.toISOString() : null,
+          registeredAt: x.createdAt.toISOString(),
+        };
+      });
+      const households = new Set(rows.map((a) => String(a.registrationId))).size;
+      const body: AdminAttendeeList = {
+        items,
+        page: q.page,
+        limit: q.limit,
+        total: rows.length,
+        summary: signupSummary(households, rows),
+      };
       res.set('Cache-Control', 'no-store').json(body);
     }),
   );
